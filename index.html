@@ -23,15 +23,14 @@
   .recent{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px;font-size:13px;color:var(--ink3)}
   .recent button{border:1px solid var(--rule);background:var(--surface);border-radius:999px;padding:4px 12px;font:inherit;font-size:14px}
   .list{margin-top:8px;border:1px solid var(--rule);border-radius:10px;background:var(--surface);max-height:220px;overflow-y:auto}
-  .list button{display:flex;gap:10px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--rule);background:transparent;padding:11px 12px;font:inherit;font-size:15px;color:var(--ink)}
+  .list button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;border-bottom:1px solid var(--rule);background:transparent;padding:11px 12px;font:inherit;font-size:15px;color:var(--ink)}
   .list button:last-child{border-bottom:0}
   .list button code{font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--ink3);min-width:3.6em;flex:none}
   .list button span{min-width:0;word-break:break-all}
+  .list button.on{background:var(--soft)}
+  .list button.on::after{content:"✓";margin-left:auto;flex:none;color:var(--accent);font-weight:700}
   .list .none{padding:12px;color:var(--ink3);font-size:14px}
   .ym{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .qty{display:grid;grid-template-columns:56px 1fr 56px;gap:8px}
-  .qty button{border:1px solid var(--rule);background:var(--surface);border-radius:10px;font-size:22px;color:var(--accent);font-weight:700}
-  .qty input{text-align:center;font-size:18px}
   .err{margin:14px 0 0;padding:10px 12px;border-radius:8px;background:var(--bad-bg);color:var(--bad);font-size:14px;line-height:1.5}
   .err.warn{background:var(--warn-bg);color:var(--warn)}
   .submit{display:block;width:100%;margin-top:20px;border:0;border-radius:12px;background:var(--accent);color:#fff;font:inherit;font-size:17px;font-weight:700;padding:14px}
@@ -43,9 +42,28 @@
   .items .it small{display:block;color:var(--ink2);font-size:13px}
   .items .it button{border:1px solid var(--rule);background:var(--surface);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;color:var(--bad)}
   .entry{margin-top:16px;padding:12px;border:1px dashed var(--ink3);border-radius:12px}
-  .entry .lbl:first-child{margin-top:0}
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:12px;background:#E3E8E4}
+  .seg button{border:0;border-radius:9px;padding:10px 4px;font:inherit;font-size:15px;font-weight:700;color:var(--ink2);background:transparent}
+  .seg button.on{background:var(--surface);color:var(--accent);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .seg button small{display:block;font-size:11px;font-weight:400;color:var(--ink3)}
   .addbtn{display:block;width:100%;margin-top:14px;border:1.5px solid var(--accent);border-radius:10px;background:var(--surface);color:var(--accent);font:inherit;font-size:16px;font-weight:700;padding:12px}
+  .addbtn:disabled{opacity:.45}
   .hint{margin:6px 0 0;font-size:13px;color:var(--ink3)}
+  .q2{display:grid;grid-template-columns:36px 44px 36px;gap:4px}
+  .q2 button{border:1px solid var(--rule);background:var(--surface);border-radius:8px;font-size:18px;color:var(--accent);font-weight:700;padding:0;height:36px}
+  .q2 input{padding:0 2px;text-align:center;font-size:16px;border-radius:8px;height:36px}
+  .picked{margin-top:10px;border:1.5px solid var(--accent);border-radius:10px;background:var(--surface)}
+  .picked .pr{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:8px 6px 8px 10px;border-bottom:1px solid var(--rule)}
+  .picked .pr:last-child{border-bottom:0}
+  .picked .pr b{display:block;font-size:15px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .picked .pr small{display:block;color:var(--ink2);font-size:12px;word-break:break-all}
+  .x{border:0;background:transparent;color:var(--ink3);font-size:20px;line-height:1;padding:6px}
+  .xrow{margin-top:8px;padding:10px;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+  .xhead{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--ink2);margin-bottom:6px}
+  .xhead button{border:0;background:transparent;color:var(--bad);font:inherit;font-size:13px;padding:2px 4px}
+  .xgrid{display:grid;grid-template-columns:1fr 1fr 116px;gap:6px;align-items:center}
+  .xgrid select{padding:0 24px 0 8px;font-size:15px;height:36px;background-position:calc(100% - 13px) 50%,calc(100% - 8px) 50%}
+  .morebtn{display:block;width:100%;margin-top:8px;border:1px dashed var(--accent);border-radius:10px;background:transparent;color:var(--accent);font:inherit;font-size:15px;padding:10px}
   .fb{margin-top:16px;padding:14px;border-radius:10px;background:var(--surface);font-size:14px;color:var(--ink2)}
   .fb textarea{width:100%;margin-top:8px;font:inherit;font-size:14px;padding:10px;border:1px solid var(--rule);border-radius:8px;min-height:120px}
   .fb button{margin-top:8px;border:0;border-radius:8px;background:var(--accent);color:#fff;font:inherit;font-weight:700;padding:10px 16px}
@@ -64,23 +82,38 @@
 
     <span class="lbl">本次要記錄的品項 <span id="cnt"></span></span>
     <div id="items" class="items" hidden></div>
-    <p id="items-empty" class="hint">還沒有加入任何品項。在下面填好一筆後按「加入清單」；同一家店可以加很多筆。</p>
+    <p id="items-empty" class="hint">還沒有加入任何品項。在下面選好後按「加入清單」，可以重複加入不同批。</p>
 
     <div class="entry">
-    <span class="lbl">菸品代碼</span>
-    <div id="sel" class="sel" hidden></div>
-    <input id="q" type="search" placeholder="輸入代碼或品名搜尋" aria-label="搜尋菸品">
-    <div id="recent" class="recent"></div>
-    <div id="list" class="list" role="listbox" aria-label="菸品清單"></div>
+      <div class="seg" role="tablist" aria-label="輸入方式">
+        <button type="button" class="on" data-mode="multi" role="tab" aria-selected="true">多產品・同效期<small>選一個效期，勾多個品項</small></button>
+        <button type="button" data-mode="single" role="tab" aria-selected="false">同產品・多效期<small>選一個品項，填多個效期</small></button>
+      </div>
 
-    <span class="lbl">到期（年／月）</span>
-    <div class="ym"><select id="year" aria-label="到期年"></select><select id="month" aria-label="到期月"></select></div>
+      <div id="pane-multi">
+        <span class="lbl">這一批的到期（年／月）</span>
+        <div class="ym"><select id="yearA" aria-label="到期年"></select><select id="monthA" aria-label="到期月"></select></div>
+        <span class="lbl">點選品項（可多個） <span id="cntA"></span></span>
+        <input id="qA" type="search" placeholder="輸入代碼或品名搜尋" aria-label="搜尋菸品">
+        <div id="recentA" class="recent"></div>
+        <div id="listA" class="list" role="listbox" aria-label="菸品清單" aria-multiselectable="true"></div>
+        <div id="picked" class="picked" hidden></div>
+        <p id="errA" class="err" hidden></p>
+        <button type="button" id="addA" class="addbtn">加入清單</button>
+      </div>
 
-    <label for="qty">數量（包）</label>
-    <div class="qty"><button type="button" id="minus" aria-label="減少一包">−</button><input id="qty" type="number" inputmode="numeric" min="1" value="1"><button type="button" id="plus" aria-label="增加一包">＋</button></div>
-
-    <p id="err" class="err" hidden></p>
-    <button type="button" id="add" class="addbtn">加入清單</button>
+      <div id="pane-single" hidden>
+        <span class="lbl">菸品代碼</span>
+        <div id="sel" class="sel" hidden></div>
+        <input id="qB" type="search" placeholder="輸入代碼或品名搜尋" aria-label="搜尋菸品">
+        <div id="recentB" class="recent"></div>
+        <div id="listB" class="list" role="listbox" aria-label="菸品清單"></div>
+        <span class="lbl">這個品項的效期與數量</span>
+        <div id="xrows"></div>
+        <button type="button" id="addRow" class="morebtn">＋ 再加一個效期</button>
+        <p id="errB" class="err" hidden></p>
+        <button type="button" id="addB" class="addbtn">加入清單</button>
+      </div>
     </div>
     <p id="err2" class="err" hidden></p>
     <button type="submit" id="submit" class="submit">送出紀錄</button>
@@ -102,7 +135,11 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var status = $('status'), form = $('form');
-  var data = null, selCode = null, selStore = null, warnKey = null, sending = false, items = [];
+  var data = null, selStore = null, sending = false, items = [];
+  var mode = 'multi';
+  var pickedA = [];                 // 多產品・同效期：[{code, qty}]
+  var selCode = null, rowsB = [];   // 同產品・多效期：選中的品項、[{y, m, qty}]
+  var warnKey = null;
 
   function show(msg, bad) { status.textContent = msg; status.className = 'status' + (bad ? ' bad' : ''); status.hidden = false; }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
@@ -140,20 +177,23 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     show('無法啟動表單：' + (e && e.message ? e.message : e) + '\n請管理員確認 LIFF ID 與 Apps Script 網址。', true);
   });
 
+  function yearOptions(short) { var y = data.year; return [y, y + 1, y + 2].map(function (v) { return '<option value="' + v + '">' + v + (short ? '' : ' 年') + '</option>'; }).join(''); }
+  function monthOptions() { var mo = '<option value="">月</option>'; for (var i = 1; i <= 12; i++) mo += '<option value="' + i + '">' + i + ' 月</option>'; return mo; }
+
   function render() {
     $('rep').textContent = data.rep;
     if (data.stores.length === 1) selStore = data.stores[0][0];
     renderStore();
-    var y = data.year;
-    $('year').innerHTML = [y, y + 1, y + 2].map(function (v) { return '<option value="' + v + '">' + v + ' 年</option>'; }).join('');
-    var mo = '<option value="">月</option>';
-    for (var i = 1; i <= 12; i++) mo += '<option value="' + i + '">' + i + ' 月</option>';
-    $('month').innerHTML = mo;
-    renderCode(); renderItems();
+    $('yearA').innerHTML = yearOptions(); $('monthA').innerHTML = monthOptions();
+    try { var saved = localStorage.getItem('expiry-form-mode'); if (saved === 'single') mode = 'single'; } catch (e) {}
+    rowsB = [newRow()];
+    setMode(mode);
+    renderItems();
     status.hidden = true;
     form.hidden = false;
   }
 
+  /* ---------- 店家 ---------- */
   function storeName(code) { for (var i = 0; i < data.stores.length; i++) if (data.stores[i][0] === code) return data.stores[i][1]; return ''; }
   function renderStore() {
     var has = !!selStore;
@@ -164,10 +204,10 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
       return;
     }
     var q = $('sq').value.trim().toLowerCase();
-    var items = data.stores.filter(function (st) { return !q || st[0].toLowerCase().indexOf(q) >= 0 || st[1].toLowerCase().indexOf(q) >= 0; });
-    var limited = items.slice(0, 60);
+    var found = data.stores.filter(function (st) { return !q || st[0].toLowerCase().indexOf(q) >= 0 || st[1].toLowerCase().indexOf(q) >= 0; });
+    var limited = found.slice(0, 60);
     $('slist').innerHTML = limited.length
-      ? limited.map(function (st) { return '<button type="button" role="option" data-store="' + esc(st[0]) + '"><code>' + esc(st[0]) + '</code><span>' + esc(st[1]) + '</span></button>'; }).join('') + (items.length > 60 ? '<div class="none">還有 ' + (items.length - 60) + ' 家，請多打幾個字縮小範圍</div>' : '')
+      ? limited.map(function (st) { return '<button type="button" role="option" data-store="' + esc(st[0]) + '"><code>' + esc(st[0]) + '</code><span>' + esc(st[1]) + '</span></button>'; }).join('') + (found.length > 60 ? '<div class="none">還有 ' + (found.length - 60) + ' 家，請多打幾個字縮小範圍</div>' : '')
       : '<div class="none">找不到符合的店家</div>';
     var rec = (data.recentStores || []).filter(storeName);
     $('srecent').innerHTML = rec.length ? '<span>最近用過</span>' + rec.map(function (c) { return '<button type="button" data-store="' + esc(c) + '">' + esc(storeName(c)) + '</button>'; }).join('') : '';
@@ -177,37 +217,179 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
   $('srecent').addEventListener('click', pickStore);
   $('sq').addEventListener('input', renderStore);
 
-  function renderCode() {
-    var has = !!selCode;
-    $('sel').hidden = !has; $('q').hidden = has; $('list').hidden = has; $('recent').hidden = has;
-    if (has) {
-      var name = nameOf(selCode);
-      $('sel').innerHTML = '<code>' + esc(selCode) + '</code><span>' + esc(name) + '</span><button type="button" id="change">更換</button>';
-      $('change').onclick = function () { selCode = null; renderCode(); $('q').focus(); };
-      return;
-    }
-    var q = $('q').value.trim().toLowerCase();
-    var matches = data.products.filter(function (p) { return !q || p[0].toLowerCase().indexOf(q) >= 0 || p[1].indexOf(q) >= 0; });
-    $('list').innerHTML = matches.length
-      ? matches.map(function (p) { return '<button type="button" role="option" data-code="' + esc(p[0]) + '"><code>' + esc(p[0]) + '</code><span>' + esc(p[1]) + '</span></button>'; }).join('')
-      : '<div class="none">找不到符合的品項</div>';
+  /* ---------- 品項搜尋（兩個模式共用） ---------- */
+  function nameOf(code) { for (var i = 0; i < data.products.length; i++) if (data.products[i][0] === code) return data.products[i][1]; return ''; }
+  function recentCodes() {
     var rec = [];
     for (var k = items.length - 1; k >= 0; k--) if (rec.indexOf(items[k].code) < 0) rec.push(items[k].code);
     (data.recent || []).forEach(function (c) { if (rec.indexOf(c) < 0) rec.push(c); });
-    rec = rec.filter(nameOf).slice(0, 4);
-    $('recent').innerHTML = rec.length ? '<span>最近用過</span>' + rec.map(function (c) { return '<button type="button" data-code="' + esc(c) + '">' + esc(c) + '</button>'; }).join('') : '';
+    return rec.filter(nameOf).slice(0, 4);
   }
-  function nameOf(code) { for (var i = 0; i < data.products.length; i++) if (data.products[i][0] === code) return data.products[i][1]; return ''; }
-  function pick(e) { var b = e.target.closest ? e.target.closest('[data-code]') : null; if (b) { selCode = b.getAttribute('data-code'); renderCode(); } }
-  $('list').addEventListener('click', pick);
-  $('recent').addEventListener('click', pick);
-  $('q').addEventListener('input', renderCode);
-  $('minus').onclick = function () { var i = $('qty'); i.value = Math.max(1, (parseInt(i.value, 10) || 1) - 1); };
-  $('plus').onclick = function () { var i = $('qty'); i.value = (parseInt(i.value, 10) || 0) + 1; };
+  // isOn(code)：該品項是否要顯示為已選
+  function renderSearch(qId, listId, recentId, isOn) {
+    var q = $(qId).value.trim().toLowerCase();
+    var matches = data.products.filter(function (p) { return !q || p[0].toLowerCase().indexOf(q) >= 0 || p[1].indexOf(q) >= 0; });
+    $(listId).innerHTML = matches.length
+      ? matches.map(function (p) { return '<button type="button" role="option" class="' + (isOn(p[0]) ? 'on' : '') + '" aria-selected="' + (isOn(p[0]) ? 'true' : 'false') + '" data-code="' + esc(p[0]) + '"><code>' + esc(p[0]) + '</code><span>' + esc(p[1]) + '</span></button>'; }).join('')
+      : '<div class="none">找不到符合的品項</div>';
+    var rec = recentCodes();
+    $(recentId).innerHTML = rec.length ? '<span>最近用過</span>' + rec.map(function (c) { return '<button type="button" data-code="' + esc(c) + '">' + esc(c) + '</button>'; }).join('') : '';
+  }
+  function codeOf(e) { var b = e.target.closest ? e.target.closest('[data-code]') : null; return b ? b.getAttribute('data-code') : null; }
 
-  function err(t, warn, id) { var e = $(id || 'err'); e.textContent = t; e.className = 'err' + (warn ? ' warn' : ''); e.hidden = false; }
-  function clearErr() { $('err').hidden = true; $('err2').hidden = true; }
+  /* ---------- 模式切換 ---------- */
+  function setMode(m) {
+    mode = m;
+    try { localStorage.setItem('expiry-form-mode', m); } catch (e) {}
+    var segs = document.querySelectorAll('.seg button');
+    for (var i = 0; i < segs.length; i++) { var on = segs[i].getAttribute('data-mode') === m; segs[i].className = on ? 'on' : ''; segs[i].setAttribute('aria-selected', on ? 'true' : 'false'); }
+    $('pane-multi').hidden = m !== 'multi'; $('pane-single').hidden = m !== 'single';
+    warnKey = null; clearErr();
+    if (m === 'multi') renderA(); else renderB();
+  }
+  document.querySelector('.seg').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-mode]') : null;
+    if (b && b.getAttribute('data-mode') !== mode) setMode(b.getAttribute('data-mode'));
+  });
 
+  /* ---------- 模式 A：多產品・同效期 ---------- */
+  function pickedIdx(code) { for (var i = 0; i < pickedA.length; i++) if (pickedA[i].code === code) return i; return -1; }
+  function renderA() {
+    renderSearch('qA', 'listA', 'recentA', function (c) { return pickedIdx(c) >= 0; });
+    var has = pickedA.length > 0;
+    $('picked').hidden = !has;
+    $('cntA').textContent = has ? '已選 ' + pickedA.length + ' 個' : '';
+    $('picked').innerHTML = pickedA.map(function (p, i) {
+      return '<div class="pr"><div><b>' + esc(p.code) + '</b><small>' + esc(nameOf(p.code)) + '</small></div>' +
+        '<div class="q2"><button type="button" data-dec="' + i + '" aria-label="減少一包">−</button><input type="number" inputmode="numeric" min="1" value="' + p.qty + '" data-qty="' + i + '" aria-label="數量（包）"><button type="button" data-inc="' + i + '" aria-label="增加一包">＋</button></div>' +
+        '<button type="button" class="x" data-rmp="' + i + '" aria-label="移除">×</button></div>';
+    }).join('');
+    var y = $('yearA').value, m = $('monthA').value;
+    $('addA').textContent = has ? '加入清單（' + pickedA.length + ' 筆' + (m ? '・到期 ' + y + '/' + pad2(+m) : '') + '）' : '加入清單';
+  }
+  function toggleA(code) {
+    var i = pickedIdx(code);
+    if (i >= 0) pickedA.splice(i, 1); else pickedA.push({ code: code, qty: 1 });
+    warnKey = null; clearErr(); renderA();
+  }
+  $('listA').addEventListener('click', function (e) { var c = codeOf(e); if (c) toggleA(c); });
+  $('recentA').addEventListener('click', function (e) { var c = codeOf(e); if (c && pickedIdx(c) < 0) toggleA(c); });
+  $('qA').addEventListener('input', renderA);
+  $('yearA').addEventListener('change', function () { warnKey = null; clearErr(); renderA(); });
+  $('monthA').addEventListener('change', function () { warnKey = null; clearErr(); renderA(); });
+  $('picked').addEventListener('click', function (e) {
+    var t = e.target.closest ? e.target.closest('button') : null;
+    if (!t) return;
+    var i;
+    if (t.hasAttribute('data-rmp')) { pickedA.splice(+t.getAttribute('data-rmp'), 1); renderA(); }
+    else if (t.hasAttribute('data-dec')) { i = +t.getAttribute('data-dec'); pickedA[i].qty = Math.max(1, pickedA[i].qty - 1); $('picked').querySelector('[data-qty="' + i + '"]').value = pickedA[i].qty; }
+    else if (t.hasAttribute('data-inc')) { i = +t.getAttribute('data-inc'); pickedA[i].qty += 1; $('picked').querySelector('[data-qty="' + i + '"]').value = pickedA[i].qty; }
+  });
+  $('picked').addEventListener('input', function (e) {
+    var t = e.target; if (!t.hasAttribute('data-qty')) return;
+    pickedA[+t.getAttribute('data-qty')].qty = parseInt(t.value, 10) || 0;
+  });
+  // 回傳要加入的清單；有問題時顯示錯誤並回傳 null。silentIfEmpty：沒選任何品項就默默略過
+  function readA(silentIfEmpty) {
+    if (!pickedA.length) { if (!silentIfEmpty) err('請先點選至少一個品項。', false, 'errA'); return null; }
+    var y = +$('yearA').value, m = +$('monthA').value;
+    if (!m) { err('請選擇這一批的到期月份。', false, 'errA'); return null; }
+    var bad = checkYM(y, m); if (bad) { err(bad, false, 'errA'); return null; }
+    for (var i = 0; i < pickedA.length; i++) if (!(pickedA[i].qty >= 1)) { err(pickedA[i].code + ' 的數量至少 1 包。', false, 'errA'); return null; }
+    if (!confirmFar([{ y: y, m: m }], 'errA')) return null;
+    return pickedA.map(function (p) { return { code: p.code, name: nameOf(p.code), y: y, m: m, qty: p.qty }; });
+  }
+  $('addA').onclick = function () {
+    clearErr();
+    var list = readA(false); if (!list) return;
+    list.forEach(pushItem); renderItems();
+    pickedA = []; warnKey = null; $('qA').value = '';
+    renderA();
+  };
+
+  /* ---------- 模式 B：同產品・多效期 ---------- */
+  function newRow() { return { y: data.year, m: 0, qty: 1 }; }
+  function renderB() {
+    var has = !!selCode;
+    $('sel').hidden = !has; $('qB').hidden = has; $('listB').hidden = has; $('recentB').hidden = has;
+    if (has) {
+      $('sel').innerHTML = '<code>' + esc(selCode) + '</code><span>' + esc(nameOf(selCode)) + '</span><button type="button" id="change">更換</button>';
+      $('change').onclick = function () { selCode = null; warnKey = null; renderB(); $('qB').focus(); };
+    } else {
+      renderSearch('qB', 'listB', 'recentB', function () { return false; });
+    }
+    $('xrows').innerHTML = rowsB.map(function (r, i) {
+      return '<div class="xrow"><div class="xhead"><span>效期 ' + (i + 1) + '</span>' + (rowsB.length > 1 ? '<button type="button" data-rmr="' + i + '">移除</button>' : '') + '</div>' +
+        '<div class="xgrid"><select data-y="' + i + '" aria-label="到期年">' + yearOptions(true) + '</select><select data-m="' + i + '" aria-label="到期月">' + monthOptions() + '</select>' +
+        '<div class="q2"><button type="button" data-dec="' + i + '" aria-label="減少一包">−</button><input type="number" inputmode="numeric" min="1" value="' + r.qty + '" data-qty="' + i + '" aria-label="數量（包）"><button type="button" data-inc="' + i + '" aria-label="增加一包">＋</button></div></div></div>';
+    }).join('');
+    rowsB.forEach(function (r, i) { $('xrows').querySelector('[data-y="' + i + '"]').value = String(r.y); $('xrows').querySelector('[data-m="' + i + '"]').value = r.m ? String(r.m) : ''; });
+    var n = rowsB.filter(function (r) { return r.m; }).length;
+    $('addB').textContent = has && n ? '加入清單（' + n + ' 筆・' + selCode + '）' : '加入清單';
+  }
+  $('listB').addEventListener('click', function (e) { var c = codeOf(e); if (c) { selCode = c; warnKey = null; clearErr(); renderB(); } });
+  $('recentB').addEventListener('click', function (e) { var c = codeOf(e); if (c) { selCode = c; warnKey = null; clearErr(); renderB(); } });
+  $('qB').addEventListener('input', renderB);
+  $('addRow').onclick = function () { rowsB.push(newRow()); clearErr(); renderB(); };
+  $('xrows').addEventListener('click', function (e) {
+    var t = e.target.closest ? e.target.closest('button') : null;
+    if (!t) return;
+    var i;
+    if (t.hasAttribute('data-rmr')) { rowsB.splice(+t.getAttribute('data-rmr'), 1); warnKey = null; clearErr(); renderB(); }
+    else if (t.hasAttribute('data-dec')) { i = +t.getAttribute('data-dec'); rowsB[i].qty = Math.max(1, rowsB[i].qty - 1); $('xrows').querySelector('[data-qty="' + i + '"]').value = rowsB[i].qty; }
+    else if (t.hasAttribute('data-inc')) { i = +t.getAttribute('data-inc'); rowsB[i].qty += 1; $('xrows').querySelector('[data-qty="' + i + '"]').value = rowsB[i].qty; }
+  });
+  $('xrows').addEventListener('change', function (e) {
+    var t = e.target;
+    if (t.hasAttribute('data-y')) { rowsB[+t.getAttribute('data-y')].y = +t.value; warnKey = null; clearErr(); renderB(); }
+    else if (t.hasAttribute('data-m')) { rowsB[+t.getAttribute('data-m')].m = +t.value; warnKey = null; clearErr(); renderB(); }
+  });
+  $('xrows').addEventListener('input', function (e) {
+    var t = e.target; if (!t.hasAttribute('data-qty')) return;
+    rowsB[+t.getAttribute('data-qty')].qty = parseInt(t.value, 10) || 0;
+  });
+  function readB(silentIfEmpty) {
+    if (!selCode) { if (!silentIfEmpty) err('請先選擇菸品代碼。', false, 'errB'); return null; }
+    var rows = rowsB.filter(function (r) { return r.m; });
+    if (!rows.length) { err('請至少填一個到期月份。', false, 'errB'); return null; }
+    for (var i = 0; i < rowsB.length; i++) {
+      if (!rowsB[i].m) { if (rowsB.length > 1) { err('效期 ' + (i + 1) + ' 還沒選月份，請選好或按「移除」。', false, 'errB'); return null; } continue; }
+      var bad = checkYM(rowsB[i].y, rowsB[i].m); if (bad) { err('效期 ' + (i + 1) + '：' + bad, false, 'errB'); return null; }
+      if (!(rowsB[i].qty >= 1)) { err('效期 ' + (i + 1) + ' 的數量至少 1 包。', false, 'errB'); return null; }
+    }
+    if (!confirmFar(rows, 'errB')) return null;
+    return rows.map(function (r) { return { code: selCode, name: nameOf(selCode), y: r.y, m: r.m, qty: r.qty }; });
+  }
+  $('addB').onclick = function () {
+    clearErr();
+    var list = readB(false); if (!list) return;
+    list.forEach(pushItem); renderItems();
+    selCode = null; warnKey = null; rowsB = [newRow()]; $('qB').value = '';
+    renderB();
+    $('qB').focus();
+  };
+
+  /* ---------- 共用檢查 ---------- */
+  function err(t, warn, id) { var e = $(id); e.textContent = t; e.className = 'err' + (warn ? ' warn' : ''); e.hidden = false; }
+  function clearErr() { $('errA').hidden = true; $('errB').hidden = true; $('err2').hidden = true; }
+  function checkYM(y, m) {
+    var idx = y * 12 + m, cur = data.year * 12 + data.month;
+    if (idx < cur) return '到期年月早於本月，請再確認包裝上的日期。';
+    return null;
+  }
+  // 超過 18 個月的效期：第一次按提出警告，再按一次才放行
+  function confirmFar(ymList, errId) {
+    var max = data.maxMonths || 18, cur = data.year * 12 + data.month;
+    var far = ymList.filter(function (r) { return r.y * 12 + r.m - cur > max; }).map(function (r) { return r.y + '/' + pad2(r.m); });
+    if (!far.length) return true;
+    var key = far.join(',');
+    if (warnKey === key) return true;
+    warnKey = key;
+    err(far.join('、') + ' 距今超過 ' + max + ' 個月，但菸品有效期限最長 18 個月，可能看錯了。確認無誤請再按一次。', true, errId);
+    return false;
+  }
+
+  /* ---------- 待送出清單 ---------- */
   function renderItems() {
     var has = items.length > 0;
     $('items').hidden = !has; $('items-empty').hidden = has;
@@ -219,50 +401,27 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
   }
   $('items').addEventListener('click', function (e) {
     var b = e.target.closest ? e.target.closest('[data-rm]') : null;
-    if (b) { items.splice(+b.getAttribute('data-rm'), 1); renderItems(); }
+    if (b) { items.splice(+b.getAttribute('data-rm'), 1); renderItems(); if (mode === 'multi') renderA(); else renderB(); }
   });
-
-  // 檢查下方輸入區，通過就回傳一筆；不通過回傳 null 並顯示原因
-  function readEntry(silentIfEmpty) {
-    var y = +$('year').value, m = +$('month').value, qty = parseInt($('qty').value, 10);
-    if (silentIfEmpty && !selCode && !m) return null;
-    if (!selCode) { err('請選擇菸品代碼。'); return null; }
-    if (!m) { err('請選擇到期月份。'); return null; }
-    if (!(qty >= 1)) { err('數量至少 1 包。'); return null; }
-    var idx = y * 12 + m, cur = data.year * 12 + data.month;
-    if (idx < cur) { err('到期年月早於本月，請再確認包裝上的日期。'); return null; }
-    var key = selCode + '-' + idx;
-    if (idx - cur > (data.maxMonths || 18) && warnKey !== key) {
-      warnKey = key;
-      err('距今超過 ' + (data.maxMonths || 18) + ' 個月，但菸品有效期限最長 18 個月，可能看錯了。確認無誤請再按一次。', true);
-      return null;
-    }
-    return { code: selCode, name: nameOf(selCode), y: y, m: m, qty: qty };
-  }
   function pushItem(it) {
     for (var i = 0; i < items.length; i++) {
       if (items[i].code === it.code && items[i].y === it.y && items[i].m === it.m) { items[i].qty += it.qty; return; }
     }
     items.push(it);
   }
-  $('add').onclick = function () {
-    clearErr();
-    var it = readEntry(false);
-    if (!it) return;
-    pushItem(it); renderItems();
-    selCode = null; warnKey = null; $('qty').value = 1; $('q').value = '';
-    renderCode();
-    $('q').focus();
-  };
 
+  /* ---------- 送出 ---------- */
   form.addEventListener('submit', function (ev) {
     ev.preventDefault();
     if (sending) return;
     clearErr();
     if (!selStore) return err('請選擇店家。', false, 'err2');
-    var pending = readEntry(true);
-    if (pending) { pushItem(pending); renderItems(); selCode = null; renderCode(); }
-    else if ($('err').hidden === false) return;
+    // 下方輸入區還有選好但沒按「加入清單」的，順手加進去；有問題就停下來
+    var pending = mode === 'multi' ? readA(true) : readB(true);
+    if (pending) {
+      pending.forEach(pushItem); renderItems();
+      if (mode === 'multi') { pickedA = []; renderA(); } else { selCode = null; rowsB = [newRow()]; renderB(); }
+    } else if (!$('errA').hidden || !$('errB').hidden) return;
     if (!items.length) return err('請先加入至少一筆品項。', false, 'err2');
     var text = '新增紀錄\n店家：' + selStore + ' ' + storeName(selStore) + '\n' +
       items.map(function (it) { return '品項：' + it.code + ' ' + it.name + '｜' + it.y + '/' + pad2(it.m) + '｜' + it.qty + ' 包'; }).join('\n');
