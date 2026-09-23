@@ -36,6 +36,16 @@
   .err.warn{background:var(--warn-bg);color:var(--warn)}
   .submit{display:block;width:100%;margin-top:20px;border:0;border-radius:12px;background:var(--accent);color:#fff;font:inherit;font-size:17px;font-weight:700;padding:14px}
   .submit:disabled{opacity:.6}
+  .items{margin-top:8px;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+  .items .it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--rule)}
+  .items .it:last-child{border-bottom:0}
+  .items .it b{font-size:15px}
+  .items .it small{display:block;color:var(--ink2);font-size:13px}
+  .items .it button{border:1px solid var(--rule);background:var(--surface);border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;color:var(--bad)}
+  .entry{margin-top:16px;padding:12px;border:1px dashed var(--ink3);border-radius:12px}
+  .entry .lbl:first-child{margin-top:0}
+  .addbtn{display:block;width:100%;margin-top:14px;border:1.5px solid var(--accent);border-radius:10px;background:var(--surface);color:var(--accent);font:inherit;font-size:16px;font-weight:700;padding:12px}
+  .hint{margin:6px 0 0;font-size:13px;color:var(--ink3)}
   .fb{margin-top:16px;padding:14px;border-radius:10px;background:var(--surface);font-size:14px;color:var(--ink2)}
   .fb textarea{width:100%;margin-top:8px;font:inherit;font-size:14px;padding:10px;border:1px solid var(--rule);border-radius:8px;min-height:120px}
   .fb button{margin-top:8px;border:0;border-radius:8px;background:var(--accent);color:#fff;font:inherit;font-weight:700;padding:10px 16px}
@@ -52,6 +62,11 @@
     <div id="srecent" class="recent"></div>
     <div id="slist" class="list" role="listbox" aria-label="店家清單"></div>
 
+    <span class="lbl">本次要記錄的品項 <span id="cnt"></span></span>
+    <div id="items" class="items" hidden></div>
+    <p id="items-empty" class="hint">還沒有加入任何品項。在下面填好一筆後按「加入清單」；同一家店可以加很多筆。</p>
+
+    <div class="entry">
     <span class="lbl">菸品代碼</span>
     <div id="sel" class="sel" hidden></div>
     <input id="q" type="search" placeholder="輸入代碼或品名搜尋" aria-label="搜尋菸品">
@@ -65,6 +80,9 @@
     <div class="qty"><button type="button" id="minus" aria-label="減少一包">−</button><input id="qty" type="number" inputmode="numeric" min="1" value="1"><button type="button" id="plus" aria-label="增加一包">＋</button></div>
 
     <p id="err" class="err" hidden></p>
+    <button type="button" id="add" class="addbtn">加入清單</button>
+    </div>
+    <p id="err2" class="err" hidden></p>
     <button type="submit" id="submit" class="submit">送出紀錄</button>
   </form>
   <div id="fb" class="fb" hidden>
@@ -84,7 +102,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var status = $('status'), form = $('form');
-  var data = null, selCode = null, selStore = null, warnKey = null, sending = false;
+  var data = null, selCode = null, selStore = null, warnKey = null, sending = false, items = [];
 
   function show(msg, bad) { status.textContent = msg; status.className = 'status' + (bad ? ' bad' : ''); status.hidden = false; }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
@@ -131,7 +149,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     var mo = '<option value="">月</option>';
     for (var i = 1; i <= 12; i++) mo += '<option value="' + i + '">' + i + ' 月</option>';
     $('month').innerHTML = mo;
-    renderCode();
+    renderCode(); renderItems();
     status.hidden = true;
     form.hidden = false;
   }
@@ -169,11 +187,14 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
       return;
     }
     var q = $('q').value.trim().toLowerCase();
-    var items = data.products.filter(function (p) { return !q || p[0].toLowerCase().indexOf(q) >= 0 || p[1].indexOf(q) >= 0; });
-    $('list').innerHTML = items.length
-      ? items.map(function (p) { return '<button type="button" role="option" data-code="' + esc(p[0]) + '"><code>' + esc(p[0]) + '</code><span>' + esc(p[1]) + '</span></button>'; }).join('')
+    var matches = data.products.filter(function (p) { return !q || p[0].toLowerCase().indexOf(q) >= 0 || p[1].indexOf(q) >= 0; });
+    $('list').innerHTML = matches.length
+      ? matches.map(function (p) { return '<button type="button" role="option" data-code="' + esc(p[0]) + '"><code>' + esc(p[0]) + '</code><span>' + esc(p[1]) + '</span></button>'; }).join('')
       : '<div class="none">找不到符合的品項</div>';
-    var rec = (data.recent || []).filter(nameOf);
+    var rec = [];
+    for (var k = items.length - 1; k >= 0; k--) if (rec.indexOf(items[k].code) < 0) rec.push(items[k].code);
+    (data.recent || []).forEach(function (c) { if (rec.indexOf(c) < 0) rec.push(c); });
+    rec = rec.filter(nameOf).slice(0, 4);
     $('recent').innerHTML = rec.length ? '<span>最近用過</span>' + rec.map(function (c) { return '<button type="button" data-code="' + esc(c) + '">' + esc(c) + '</button>'; }).join('') : '';
   }
   function nameOf(code) { for (var i = 0; i < data.products.length; i++) if (data.products[i][0] === code) return data.products[i][1]; return ''; }
@@ -184,25 +205,67 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
   $('minus').onclick = function () { var i = $('qty'); i.value = Math.max(1, (parseInt(i.value, 10) || 1) - 1); };
   $('plus').onclick = function () { var i = $('qty'); i.value = (parseInt(i.value, 10) || 0) + 1; };
 
-  function err(t, warn) { var e = $('err'); e.textContent = t; e.className = 'err' + (warn ? ' warn' : ''); e.hidden = false; }
+  function err(t, warn, id) { var e = $(id || 'err'); e.textContent = t; e.className = 'err' + (warn ? ' warn' : ''); e.hidden = false; }
+  function clearErr() { $('err').hidden = true; $('err2').hidden = true; }
+
+  function renderItems() {
+    var has = items.length > 0;
+    $('items').hidden = !has; $('items-empty').hidden = has;
+    $('cnt').textContent = has ? '（' + items.length + ' 筆）' : '';
+    $('items').innerHTML = items.map(function (it, i) {
+      return '<div class="it"><div><b>' + esc(it.code) + ' ' + esc(it.name) + '</b><small>到期 ' + it.y + '/' + pad2(it.m) + '　' + it.qty + ' 包</small></div><button type="button" data-rm="' + i + '">移除</button></div>';
+    }).join('');
+    $('submit').textContent = has ? '送出 ' + items.length + ' 筆紀錄' : '送出紀錄';
+  }
+  $('items').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-rm]') : null;
+    if (b) { items.splice(+b.getAttribute('data-rm'), 1); renderItems(); }
+  });
+
+  // 檢查下方輸入區，通過就回傳一筆；不通過回傳 null 並顯示原因
+  function readEntry(silentIfEmpty) {
+    var y = +$('year').value, m = +$('month').value, qty = parseInt($('qty').value, 10);
+    if (silentIfEmpty && !selCode && !m) return null;
+    if (!selCode) { err('請選擇菸品代碼。'); return null; }
+    if (!m) { err('請選擇到期月份。'); return null; }
+    if (!(qty >= 1)) { err('數量至少 1 包。'); return null; }
+    var idx = y * 12 + m, cur = data.year * 12 + data.month;
+    if (idx < cur) { err('到期年月早於本月，請再確認包裝上的日期。'); return null; }
+    var key = selCode + '-' + idx;
+    if (idx - cur > (data.maxMonths || 18) && warnKey !== key) {
+      warnKey = key;
+      err('距今超過 ' + (data.maxMonths || 18) + ' 個月，但菸品有效期限最長 18 個月，可能看錯了。確認無誤請再按一次。', true);
+      return null;
+    }
+    return { code: selCode, name: nameOf(selCode), y: y, m: m, qty: qty };
+  }
+  function pushItem(it) {
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].code === it.code && items[i].y === it.y && items[i].m === it.m) { items[i].qty += it.qty; return; }
+    }
+    items.push(it);
+  }
+  $('add').onclick = function () {
+    clearErr();
+    var it = readEntry(false);
+    if (!it) return;
+    pushItem(it); renderItems();
+    selCode = null; warnKey = null; $('qty').value = 1; $('q').value = '';
+    renderCode();
+    $('q').focus();
+  };
 
   form.addEventListener('submit', function (ev) {
     ev.preventDefault();
     if (sending) return;
-    var y = +$('year').value, m = +$('month').value, qty = parseInt($('qty').value, 10);
-    if (!selStore) return err('請選擇店家。');
-    if (!selCode) return err('請選擇菸品代碼。');
-    if (!m) return err('請選擇到期月份。');
-    if (!(qty >= 1)) return err('數量至少 1 包。');
-    var idx = y * 12 + m, cur = data.year * 12 + data.month;
-    if (idx < cur) return err('到期年月早於本月，請再確認包裝上的日期。');
-    var key = selCode + '-' + idx;
-    if (idx - cur > (data.maxMonths || 18) && warnKey !== key) {
-      warnKey = key;
-      return err('距今超過 ' + (data.maxMonths || 18) + ' 個月，但菸品有效期限最長 18 個月，可能看錯了。確認無誤請再按一次送出。', true);
-    }
-    $('err').hidden = true;
-    var text = '新增紀錄\n店家：' + selStore + ' ' + storeName(selStore) + '\n品項：' + selCode + ' ' + nameOf(selCode) + '\n到期：' + y + '/' + pad2(m) + '\n數量：' + qty + ' 包';
+    clearErr();
+    if (!selStore) return err('請選擇店家。', false, 'err2');
+    var pending = readEntry(true);
+    if (pending) { pushItem(pending); renderItems(); selCode = null; renderCode(); }
+    else if ($('err').hidden === false) return;
+    if (!items.length) return err('請先加入至少一筆品項。', false, 'err2');
+    var text = '新增紀錄\n店家：' + selStore + ' ' + storeName(selStore) + '\n' +
+      items.map(function (it) { return '品項：' + it.code + ' ' + it.name + '｜' + it.y + '/' + pad2(it.m) + '｜' + it.qty + ' 包'; }).join('\n');
     sending = true; $('submit').disabled = true; $('submit').textContent = '送出中…';
     if (liff.isInClient()) {
       liff.sendMessages([{ type: 'text', text: text }]).then(function () {
@@ -214,7 +277,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
   });
 
   function fallback(text, msg) {
-    sending = false; $('submit').disabled = false; $('submit').textContent = '送出紀錄';
+    sending = false; $('submit').disabled = false; renderItems();
     $('fbmsg').textContent = msg; $('fbtext').value = text; $('fb').hidden = false;
     $('fbcopy').onclick = function () {
       var ta = $('fbtext'); ta.focus(); ta.select();
