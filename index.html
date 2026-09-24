@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>菸品效期小幫手</title>
 <script>
-  // 版本：2026-09-24 h
+  // 版本：2026-09-24 i（處理頁附照片、代理的店）
   // 一載入就先判斷是「新增紀錄」還是「店家處理頁」（?store=…；第一次開啟時參數包在 liff.state 裡），
   // 標題不會先閃成「新增效期紀錄」，處理頁的店名也能馬上顯示。
   window.START = (function () {
@@ -57,6 +57,7 @@
   .hbs{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px}
   .hb{font-style:normal;font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn)}
   .hb.old{background:#E3E8E4;color:#4B5550}
+  .hb.cov{background:#DCEBF5;color:#1F5E8A;margin-left:6px;vertical-align:1px}
   .ym{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .err{margin:14px 0 0;padding:10px 12px;border-radius:8px;background:var(--bad-bg);color:var(--bad);font-size:14px;line-height:1.5;white-space:pre-line}
   .err.warn{background:var(--warn-bg);color:var(--warn)}
@@ -172,6 +173,14 @@
   details.nyet{margin-top:16px}
   details.nyet summary{font-size:13px;font-weight:700;color:var(--ink3);padding:4px 2px 8px;cursor:pointer}
   .empty{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px;text-align:center;color:var(--ink3);font-size:14px}
+  .pcov{display:inline-block;margin:4px 0 0 6px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:4px;background:#DCEBF5;color:#1F5E8A}
+  .phb{display:inline-flex;align-items:center;gap:4px;min-height:32px;border:1px solid var(--rule);border-radius:999px;background:var(--surface);color:var(--ink2);font:inherit;font-size:12.5px;font-weight:700;padding:3px 11px}
+  .phb.has{border-color:#9CC3AE;color:var(--accent)}
+  .phb.ok{border-color:var(--accent);background:var(--soft);color:var(--accent)}
+  .phb:disabled{opacity:.6}
+  .qline .phb{margin-left:auto}
+  .lt .info .phb{margin-top:2px}
+  .vh{position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0}   /* 有些手機不能點 display:none 的檔案欄位 */
 </style>
 </head>
 <body>
@@ -233,7 +242,7 @@
   <!-- 店家處理頁：從聊天室的「看品項」打開（網址帶 ?store=店家代碼） -->
   <div id="proc" hidden>
     <p class="who">業代：<b id="prep"></b></p>
-    <div class="phead"><div class="pn"><b id="pname"></b><small id="pcode"></small></div><button type="button" id="again" class="again" hidden>＋ 這家店再記一筆</button></div>
+    <div class="phead"><div class="pn"><b id="pname"></b><small id="pcode"></small><span id="pcov" class="pcov" hidden></span></div><button type="button" id="again" class="again" hidden>＋ 這家店再記一筆</button></div>
     <div class="ptabs" id="ptabs" role="tablist" aria-label="分頁">
       <button type="button" id="tabP" data-tab="pending" role="tab"></button>
       <button type="button" id="tabD" data-tab="done" role="tab"></button>
@@ -245,6 +254,7 @@
 <div id="fbar" class="bar" hidden><div class="bar-in"><span id="fcount">還沒有加入品項</span><button type="submit" form="form" id="submit">送出紀錄</button></div></div>
 <div id="pbar" class="bar" hidden><div class="bar-in"><span id="pcount">還沒有變更</span><button type="button" id="psubmit" disabled>完成送出</button></div></div>
 <div id="sheet" class="sheet" hidden></div>
+<input type="file" id="phfile" accept="image/*" class="vh" tabindex="-1" aria-hidden="true">
 
 <script>
 // ====== 設定：只需要改下面這兩行 ======
@@ -278,7 +288,12 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     not_bound: '你還沒有開通。\n請先回聊天室傳送管理員給你的 6 位數綁定碼。',
     not_configured: '管理員尚未在 Apps Script 設定 LIFF_CHANNEL_ID。',
     invalid_token: '登入資訊已過期，請關閉後重新開啟。',
-    no_store: '找不到這家店，或這家店不在你負責的清單裡。',
+    no_store: '找不到這家店，或這家店不在你負責的清單裡（代理期間結束後，被代理人的店就不會再出現）。',
+    no_record: '找不到這一筆紀錄，請關閉後重新開啟。',
+    photo_off: '管理員已關閉照片功能。',
+    photo_limit: '這一筆的照片已經滿了（最多 5 張）。',
+    too_big: '照片太大，請重拍一次。',
+    bad_request: '照片讀取失敗，請重拍一次。',
     no_changes: '沒有需要送出的變更。',
     nothing_changed: '這些品項的狀態已經是你選的了（可能剛才已經送出過）。請關閉後重新開啟看看。',
     server_error: '伺服器發生錯誤，請稍後再試；一直失敗請通知管理員。'
@@ -422,12 +437,15 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
 
   /* ---------- 店家 ---------- */
   function storeName(code) { for (var i = 0; i < data.stores.length; i++) if (data.stores[i][0] === code) return data.stores[i][1]; return ''; }
+  // 代理的店：第三個欄位是「代理 某某」
+  function storeCov(code) { for (var i = 0; i < data.stores.length; i++) if (data.stores[i][0] === code) return data.stores[i][2] || ''; return ''; }
+  function covTag(t) { return t ? '<em class="hb cov">' + esc(t) + '</em>' : ''; }
   function resetChecks() { items.forEach(function (i) { i.checked = false; delete i.upd; delete i.oldQty; }); }
   function renderStore() {
     var has = !!selStore;
     $('ssel').hidden = !has; $('sq').hidden = has; $('slist').hidden = has; $('srecent').hidden = has;
     if (has) {
-      $('ssel').innerHTML = '<code>' + esc(selStore) + '</code><span>' + esc(storeName(selStore)) + '</span><button type="button" id="schange">更換</button>';
+      $('ssel').innerHTML = '<code>' + esc(selStore) + '</code><span>' + esc(storeName(selStore)) + covTag(storeCov(selStore)) + '</span><button type="button" id="schange">更換</button>';
       $('schange').onclick = function () { selStore = null; resetChecks(); renderStore(); renderItems(); rerenderEntry(); $('sq').focus(); };
       return;
     }
@@ -435,7 +453,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     var found = data.stores.filter(function (st) { return !q || st[0].toLowerCase().indexOf(q) >= 0 || st[1].toLowerCase().indexOf(q) >= 0; });
     var limited = found.slice(0, 60);
     $('slist').innerHTML = limited.length
-      ? limited.map(function (st) { return '<button type="button" role="option" data-store="' + esc(st[0]) + '"><code>' + esc(st[0]) + '</code><span>' + esc(st[1]) + '</span></button>'; }).join('') + (found.length > 60 ? '<div class="none">還有 ' + (found.length - 60) + ' 家，請多打幾個字縮小範圍</div>' : '')
+      ? limited.map(function (st) { return '<button type="button" role="option" data-store="' + esc(st[0]) + '"><code>' + esc(st[0]) + '</code><span>' + esc(st[1]) + covTag(st[2]) + '</span></button>'; }).join('') + (found.length > 60 ? '<div class="none">還有 ' + (found.length - 60) + ' 家，請多打幾個字縮小範圍</div>' : '')
       : '<div class="none">找不到符合的店家</div>';
     var rec = (data.recentStores || []).filter(storeName);
     $('srecent').innerHTML = rec.length ? '<span>最近用過</span>' + rec.map(function (c) { return '<button type="button" data-store="' + esc(c) + '">' + esc(storeName(c)) + '</button>'; }).join('') : '';
@@ -786,7 +804,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
   function startProc(idToken, store, tab) {
     api({ idToken: idToken, op: 'store', store: store }).then(function (res) {
       if (!res.ok) { fatal(errText(res.error)); return; }
-      P = { data: res, tab: tab, edits: {}, sending: false, confirmDel: false, openNyet: false };
+      P = { data: res, tab: tab, edits: {}, sending: false, confirmDel: false, openNyet: false, ph: {} };
       renderProc();
       status.hidden = true; $('proc').hidden = false; $('pbar').hidden = false; $('again').hidden = false;
     }).catch(function (e) {
@@ -832,26 +850,28 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     var info = isActive(x)
       ? x.ym + ' · ' + x.qty + ' 包 · ' + x.label
       : x.ym + ' · ' + x.qty + ' 包' + (x.doneAt ? ' · ' + x.doneAt.slice(5) + ' ' + (x.status === P.data.deleted ? '刪除' : '處理') : '');
-    var extra = '';
+    var extra = '', ph = phBtn(x);
     var statusSet = e && (e.xfer || (e.status != null && e.status !== P.data.active));
-    if (!undoLabel && isActive(x) && !statusSet) {           // 剩餘數量：賣掉一部分就改數字，改成 0＝已售完
+    if (!undoLabel && isActive(x) && !statusSet) {           // 剩餘數量：賣掉一部分就改數字，改成 0＝已售完；照片按鈕放在同一行右邊
       var q = e && e.qty != null ? e.qty : x.qty;
       extra += '<div class="qline"><span>剩餘</span><div class="q3"><button type="button" data-qd="' + x.id + '" aria-label="少一包">−</button>' +
         '<input type="number" inputmode="numeric" min="0" value="' + q + '" data-qi="' + x.id + '" aria-label="' + esc(x.name) + ' 剩餘數量"><button type="button" data-qu="' + x.id + '" aria-label="多一包">＋</button></div><span>包</span>' +
-        (e && e.qty != null ? '<em>原 ' + x.qty + ' 包' + (e.qty < x.qty ? '，賣掉 ' + (x.qty - e.qty) + ' 包' : '') + '</em>' : '') + '</div>';
+        (e && e.qty != null ? '<em>原 ' + x.qty + ' 包' + (e.qty < x.qty ? '，賣掉 ' + (x.qty - e.qty) + ' 包' : '') + '</em>' : '') + ph + '</div>';
+      ph = '';
     }
     if (e && e.xfer) {
       extra += '<div class="xline"><span>→ 調撥到 <b>' + esc(targetName(e.xfer.store)) + '</b>・' + e.xfer.qty + ' 包' + (e.xfer.qty < x.qty ? '（留 ' + (x.qty - e.xfer.qty) + ' 包在這家）' : '') + '</span><button type="button" data-xedit="' + x.id + '">改</button></div>';
     }
     if (isXfer(x) && x.note) extra += '<div class="xline done"><span>' + esc(x.note) + '</span></div>';
     return '<div class="lrow' + (chg ? ' chg' : '') + '"><div class="lt' + (isActive(x) ? '' : ' dim') + '"><b>' + esc(x.name) + '</b><small>' + esc(x.code) + '　#' + x.id + '</small>' +
-      '<div class="info">' + tagOf(x) + '<span class="' + infoCls(x) + '">' + esc(info) + '</span></div></div>' +
+      '<div class="info">' + tagOf(x) + '<span class="' + infoCls(x) + '">' + esc(info) + '</span></div>' + (ph ? '<div class="info">' + ph + '</div>' : '') + '</div>' +
       '<select class="st" data-id="' + x.id + '"' + (isXfer(x) ? ' disabled' : '') + ' aria-label="' + esc(x.name) + ' 的處理方式">' + optsHtml(cur, undoLabel, x) + '</select>' + extra + '</div>';
   }
   function renderProc() {
     var d = P.data;
     $('prep').textContent = d.rep;
     $('pname').textContent = d.store.name; $('pcode').textContent = d.store.code;
+    $('pcov').hidden = !d.cover; $('pcov').textContent = d.cover ? '代理 ' + d.cover + ' 的店' : '';
     var due = d.pending.filter(function (x) { return x.due; });
     var nyet = d.pending.filter(function (x) { return !x.due; });
     $('tabP').textContent = '待處理 ' + due.length; $('tabD').textContent = '已處理 ' + d.done.length;
@@ -876,6 +896,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
       if (d.done.length) h += '<div class="lcard">' + d.done.map(function (x) { return prow(x, true); }).join('') + '</div><p class="hint">最近 ' + d.doneDays + ' 天處理的品項。選錯了就改成別的處理方式；改回「未處理」就是復原，會重新提醒。調撥的品項請到目的店家處理。</p>';
       else h += '<div class="empty">最近 ' + d.doneDays + ' 天沒有處理紀錄。</div>';
     }
+    if (d.photo && (P.tab === 'pending' ? d.pending.length : d.done.length)) h += '<p class="hint">📷 照片選填，當退貨、換貨、售完的佐證；按下去馬上存好，不用等「完成送出」。</p>';
     var y = window.scrollY;
     $('pbody').innerHTML = h;
     window.scrollTo(0, y);
@@ -938,6 +959,52 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
       return;
     }
     if (b.hasAttribute('data-xedit')) { var x3 = findItem(+b.getAttribute('data-xedit')); if (x3) openXfer(x3); }
+    if (b.hasAttribute('data-ph')) {
+      var x4 = findItem(+b.getAttribute('data-ph')); if (!x4 || P.phBusy) return;
+      if ((x4.photos || 0) >= (P.data.photoMax || 5)) { perr(errText('photo_limit'), true); return; }
+      P.phId = x4.id; $('phfile').value = ''; $('phfile').click();
+    }
+  });
+
+  /* 照片：選好（或拍好）後先在手機上縮小成長邊 1280、JPEG，再上傳；存好就算數，不用按完成送出 */
+  function phBtn(x) {
+    if (!P.data.photo || x.status === P.data.deleted) return '';
+    var st = P.ph[x.id], n = x.photos || 0;
+    if (st === 'up') return '<button type="button" class="phb" disabled>上傳中…</button>';
+    return '<button type="button" class="phb' + (st === 'ok' ? ' ok' : n ? ' has' : '') + '" data-ph="' + x.id + '" aria-label="' + esc(x.name) + ' 附照片">📷 ' +
+      (st === 'ok' ? '已存 ' + n + ' 張' : n ? n + ' 張' : '照片') + '</button>';
+  }
+  function shrink(file, edge, q) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, edge / Math.max(w, h));
+        var c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        var d = c.toDataURL('image/jpeg', q);
+        resolve(d.slice(d.indexOf(',') + 1));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('讀不到這張照片')); };
+      img.src = url;
+    });
+  }
+  $('phfile').addEventListener('change', function () {
+    var f = this.files && this.files[0], id = P && P.phId;
+    if (!f || !id) return;
+    var x = findItem(id); if (!x) return;
+    P.phBusy = true; P.ph[id] = 'up'; $('perr').hidden = true; renderProc();
+    shrink(f, 1280, 0.72).then(function (b64) {
+      return api({ idToken: liff.getIDToken(), op: 'photo', store: P.data.store.code, id: id, data: b64 });
+    }).then(function (res) {
+      P.phBusy = false;
+      if (!res.ok) { delete P.ph[id]; renderProc(); perr(errText(res.error)); return; }
+      x.photos = res.photos; P.ph[id] = 'ok'; renderProc();
+    }).catch(function (e) {
+      P.phBusy = false; delete P.ph[id]; renderProc();
+      perr('照片上傳失敗，請確認網路後再試一次。\n（' + (e && e.message ? e.message : e) + '）');
+    });
   });
   $('ptabs').addEventListener('click', function (e) {
     var b = e.target.closest ? e.target.closest('[data-tab]') : null;
