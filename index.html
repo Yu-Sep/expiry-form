@@ -31,7 +31,7 @@
   .list button.on::after{content:"✓";margin-left:auto;flex:none;color:var(--accent);font-weight:700}
   .list .none{padding:12px;color:var(--ink3);font-size:14px}
   .ym{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .err{margin:14px 0 0;padding:10px 12px;border-radius:8px;background:var(--bad-bg);color:var(--bad);font-size:14px;line-height:1.5}
+  .err{margin:14px 0 0;padding:10px 12px;border-radius:8px;background:var(--bad-bg);color:var(--bad);font-size:14px;line-height:1.5;white-space:pre-line}
   .err.warn{background:var(--warn-bg);color:var(--warn)}
   .submit{display:block;width:100%;margin-top:20px;border:0;border-radius:12px;background:var(--accent);color:#fff;font:inherit;font-size:17px;font-weight:700;padding:14px}
   .submit:disabled{opacity:.6}
@@ -67,6 +67,40 @@
   .fb{margin-top:16px;padding:14px;border-radius:10px;background:var(--surface);font-size:14px;color:var(--ink2)}
   .fb textarea{width:100%;margin-top:8px;font:inherit;font-size:14px;padding:10px;border:1px solid var(--rule);border-radius:8px;min-height:120px}
   .fb button{margin-top:8px;border:0;border-radius:8px;background:var(--accent);color:#fff;font:inherit;font-weight:700;padding:10px 16px}
+
+  /* ---------- 店家處理頁 ---------- */
+  #proc{padding-bottom:88px}
+  .phead b{display:block;font-size:21px;color:var(--accent);line-height:1.35}
+  .phead small{font-size:13px;color:var(--ink3);font-family:ui-monospace,Menlo,Consolas,monospace}
+  .ptabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:12px 0}
+  .ptabs button{border:1.5px solid #CFE3DA;background:var(--surface);color:var(--accent);border-radius:10px;padding:10px 4px;font:inherit;font-size:15px;font-weight:700}
+  .ptabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .bulk{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:8px 10px;font-size:14px;font-weight:700;color:var(--ink2)}
+  .bulk span{flex:none}
+  .bulk select{padding:9px 32px 9px 10px;font-size:15px}
+  .lsect{font-size:13px;font-weight:700;color:var(--ink3);margin:16px 2px 6px}
+  .lcard{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:0 12px;overflow:hidden}
+  .lrow{display:flex;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--rule)}
+  .lrow:last-child{border-bottom:0}
+  .lrow.chg{background:#FFF6D1;margin:0 -12px;padding:12px}
+  .lt{flex:1;min-width:0}
+  .lt b{display:block;font-size:15px;line-height:1.35}
+  .lt small{display:block;color:var(--ink3);font-size:12px}
+  .lt.dim b,.lt.dim small{color:#8E9892}
+  .info{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px;font-size:12px;font-weight:700}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;white-space:nowrap}
+  .c-exp{color:var(--bad)}.c-pend{color:#B3580E}.c-not{color:#4B6185}.c-done{color:var(--ink3)}
+  select.st{flex:none;width:132px;padding:10px 30px 10px 10px;font-size:15px}
+  .lrow.chg select.st{border-color:#C26A12;border-width:1.5px;color:#8A4A06;font-weight:700}
+  details.nyet{margin-top:16px}
+  details.nyet summary{font-size:13px;font-weight:700;color:var(--ink3);padding:4px 2px 8px;cursor:pointer}
+  .empty{background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:18px;text-align:center;color:var(--ink3);font-size:14px}
+  .pbar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--rule);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+  .pbar-in{max-width:520px;margin:0 auto;display:flex;align-items:center;gap:12px}
+  .pbar-in span{flex:1;font-size:14px;color:var(--ink3)}
+  .pbar-in span b{color:#8A4A06}
+  .pbar-in button{border:0;border-radius:12px;background:var(--accent);color:#fff;font:inherit;font-size:17px;font-weight:700;padding:12px 22px}
+  .pbar-in button:disabled{background:#B9C7BF}
 </style>
 </head>
 <body>
@@ -123,7 +157,20 @@
     <textarea id="fbtext" readonly></textarea>
     <button type="button" id="fbcopy">複製</button>
   </div>
+
+  <!-- 店家處理頁：從聊天室的「看品項」打開（網址帶 ?store=店家代碼） -->
+  <div id="proc" hidden>
+    <p class="who">業代：<b id="prep"></b></p>
+    <div class="phead"><b id="pname"></b><small id="pcode"></small></div>
+    <div class="ptabs" id="ptabs" role="tablist" aria-label="分頁">
+      <button type="button" id="tabP" data-tab="pending" role="tab"></button>
+      <button type="button" id="tabD" data-tab="done" role="tab"></button>
+    </div>
+    <div id="pbody"></div>
+    <p id="perr" class="err" hidden></p>
+  </div>
 </div>
+<div id="pbar" class="pbar" hidden><div class="pbar-in"><span id="pcount">還沒有變更</span><button type="button" id="psubmit" disabled>完成送出</button></div></div>
 
 <script>
 // ====== 設定：只需要改下面這兩行 ======
@@ -144,6 +191,35 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
   function show(msg, bad) { status.textContent = msg; status.className = 'status' + (bad ? ' bad' : ''); status.hidden = false; }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var ERRS = {
+    not_bound: '你還沒有開通。\n請先回聊天室傳送管理員給你的 6 位數綁定碼。',
+    not_configured: '管理員尚未在 Apps Script 設定 LIFF_CHANNEL_ID。',
+    invalid_token: '登入資訊已過期，請關閉後重新開啟。',
+    no_store: '找不到這家店，或這家店不在你負責的清單裡。',
+    no_changes: '沒有需要送出的變更。',
+    nothing_changed: '這些品項的狀態已經是你選的了（可能剛才已經送出過）。請關閉後重新開啟看看。',
+    server_error: '伺服器發生錯誤，請稍後再試；一直失敗請通知管理員。'
+  };
+  function errText(code) { return ERRS[code] || ('發生錯誤：' + code); }
+  function api(body) {
+    return fetch(API_URL + '?action=liff', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body)
+    }).then(function (r) { return r.json(); });
+  }
+  // LIFF 網址後面的參數（?store=…&tab=…）；第一次開啟時會包在 liff.state 裡
+  function readParams() {
+    var q = new URLSearchParams(location.search);
+    var st = q.get('liff.state');
+    if (!q.get('store') && st) {
+      var s = st;
+      if (s.indexOf('%') >= 0) { try { s = decodeURIComponent(s); } catch (e) {} }
+      var i = s.indexOf('?');
+      if (i >= 0) q = new URLSearchParams(s.slice(i + 1));
+    }
+    return { store: (q.get('store') || '').trim(), tab: q.get('tab') === 'done' ? 'done' : 'pending' };
+  }
 
   if (LIFF_ID.indexOf('請貼上') === 0 || API_URL.indexOf('請貼上') === 0) {
     show('網頁已經上線，但 index.html 裡的 LIFF ID 或 Apps Script 網址還沒填。', true);
@@ -155,21 +231,11 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
     var idToken = liff.getIDToken();
     if (!idToken) { show('取不到登入資訊，請關閉後重新開啟表單。', true); return; }
+    var prm = readParams();
+    if (prm.store) { startProc(idToken, prm.store, prm.tab); return; }
     show('讀取店家與品項…');
-    return fetch(API_URL + '?action=liff', {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ idToken: idToken })
-    }).then(function (r) { return r.json(); }).then(function (res) {
-      if (!res.ok) {
-        var m = {
-          not_bound: '你還沒有開通。\n請先回聊天室傳送管理員給你的 6 位數綁定碼。',
-          not_configured: '管理員尚未在 Apps Script 設定 LIFF_CHANNEL_ID。',
-          invalid_token: '登入資訊已過期，請關閉後重新開啟表單。'
-        };
-        show(m[res.error] || ('發生錯誤：' + res.error), true);
-        return;
-      }
+    return api({ idToken: idToken }).then(function (res) {
+      if (!res.ok) { show(errText(res.error), true); return; }
       data = res;
       render();
     });
@@ -443,6 +509,164 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
       try { document.execCommand('copy'); $('fbcopy').textContent = '已複製'; } catch (e) { $('fbcopy').textContent = '請長按文字複製'; }
     };
     $('fb').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  /* =====================================================================
+   * 店家處理頁：從聊天室「看品項」打開（網址 ?store=店家代碼，已處理分頁再加 &tab=done）
+   * 每筆用下拉選單選處理方式，按「完成送出」一次寫入試算表，再以業代名義傳一則
+   * 「✔ 處理完成 …」到聊天室，機器人回一張結果卡。
+   * ===================================================================== */
+  var P = null;
+  var PALETTE = [['#DBEEE3', '#17704C'], ['#DCEBF5', '#1F5E8A'], ['#E8E3F4', '#5A3F8F'], ['#ECEFEA', '#4B5550']];
+  var GROUPS = [['exp', '已過期'], ['this', '本月到期'], ['next', '下個月到期'], ['later', '更晚到期（提醒期內）']];
+
+  function startProc(idToken, store, tab) {
+    document.title = '處理效期品項';
+    show('讀取店家品項…');
+    api({ idToken: idToken, op: 'store', store: store }).then(function (res) {
+      if (!res.ok) { show(errText(res.error), true); return; }
+      P = { data: res, tab: tab, edits: {}, sending: false, confirmDel: false };
+      renderProc();
+      status.hidden = true; $('proc').hidden = false; $('pbar').hidden = false;
+    }).catch(function (e) {
+      show('讀取失敗，請確認網路後重新開啟。\n（' + (e && e.message ? e.message : e) + '）', true);
+    });
+  }
+
+  function allItems() { return P.data.pending.concat(P.data.done); }
+  function findItem(id) { var a = allItems(); for (var i = 0; i < a.length; i++) if (a[i].id === id) return a[i]; return null; }
+  function isActive(x) { return x.status === P.data.active; }
+  function statusColor(s) {
+    if (s === P.data.deleted) return ['#E3E8E4', '#78827D'];
+    var i = P.data.statuses.indexOf(s);
+    return PALETTE[(i < 0 ? 0 : i) % PALETTE.length];
+  }
+  function tagOf(x) {
+    if (!isActive(x)) { var c = statusColor(x.status); return '<span class="tag" style="background:' + c[0] + ';color:' + c[1] + '">' + esc(x.status) + '</span>'; }
+    if (x.bucket === 'exp') return '<span class="tag" style="background:#F7DDD9;color:#B1261D">已過期</span>';
+    if (!x.due) return '<span class="tag" style="background:#E3E8E4;color:#4B5550">未到提醒期</span>';
+    return '<span class="tag" style="background:#FBE8D4;color:#9A4A0A">待處理</span>';
+  }
+  function infoCls(x) { return !isActive(x) ? 'c-done' : x.bucket === 'exp' ? 'c-exp' : !x.due ? 'c-not' : 'c-pend'; }
+  function optsHtml(cur, undoLabel) {
+    var d = P.data;
+    var list = [[d.active, undoLabel ? '改回未處理' : '未處理']]
+      .concat(d.statuses.map(function (s) { return [s, s]; }))
+      .concat([[d.deleted, d.deleteLabel]]);
+    if (!list.some(function (o) { return o[0] === cur; })) list.unshift([cur, cur]);   // 舊版狀態（例如「已處理」）
+    return list.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (o[0] === cur ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('');
+  }
+  function bulkOpts() {
+    var d = P.data;
+    return [[d.active, '未處理']].concat(d.statuses.map(function (s) { return [s, s]; }))
+      .map(function (o) { return '<option value="' + esc(o[0]) + '">' + esc(o[1]) + '</option>'; }).join('');
+  }
+  function prow(x, undoLabel) {
+    var chg = P.edits.hasOwnProperty(x.id);
+    var cur = chg ? P.edits[x.id] : x.status;
+    var info = isActive(x)
+      ? x.ym + ' · ' + x.qty + ' 包 · ' + x.label
+      : x.ym + ' · ' + x.qty + ' 包' + (x.doneAt ? ' · ' + x.doneAt.slice(5) + ' ' + (x.status === P.data.deleted ? '刪除' : '處理') : '');
+    return '<div class="lrow' + (chg ? ' chg' : '') + '"><div class="lt' + (isActive(x) ? '' : ' dim') + '"><b>' + esc(x.name) + '</b><small>' + esc(x.code) + '　#' + x.id + '</small>' +
+      '<div class="info">' + tagOf(x) + '<span class="' + infoCls(x) + '">' + esc(info) + '</span></div></div>' +
+      '<select class="st" data-id="' + x.id + '" aria-label="' + esc(x.name) + ' 的處理方式">' + optsHtml(cur, undoLabel) + '</select></div>';
+  }
+  function renderProc() {
+    var d = P.data;
+    $('prep').textContent = d.rep;
+    $('pname').textContent = d.store.name; $('pcode').textContent = d.store.code;
+    var due = d.pending.filter(function (x) { return x.due; });
+    var nyet = d.pending.filter(function (x) { return !x.due; });
+    $('tabP').textContent = '待處理 ' + due.length; $('tabD').textContent = '已處理 ' + d.done.length;
+    $('tabP').className = P.tab === 'pending' ? 'on' : ''; $('tabD').className = P.tab === 'done' ? 'on' : '';
+    $('tabP').setAttribute('aria-selected', P.tab === 'pending'); $('tabD').setAttribute('aria-selected', P.tab === 'done');
+    var h = '';
+    if (P.tab === 'pending') {
+      if (due.length) {
+        h += '<div class="bulk"><span>全部設為</span><select id="bulk" aria-label="全部待處理品項設為"><option value="">選擇…</option>' + bulkOpts() + '</select></div>';
+        GROUPS.forEach(function (g) {
+          var list = due.filter(function (x) { return x.bucket === g[0]; });
+          if (list.length) h += '<div class="lsect">' + g[1] + '（' + list.length + '）</div><div class="lcard">' + list.map(function (x) { return prow(x); }).join('') + '</div>';
+        });
+      } else {
+        h += '<div class="empty">這家店目前沒有待處理的品項 ✓</div>';
+      }
+      if (nyet.length) {
+        var open = nyet.some(function (x) { return P.edits.hasOwnProperty(x.id); });
+        h += '<details class="nyet"' + (open ? ' open' : '') + '><summary>未到提醒期 ' + nyet.length + ' 筆（' + esc(nyet[0].ym) + ' 起）</summary><div class="lcard">' + nyet.map(function (x) { return prow(x); }).join('') + '</div></details>';
+      }
+    } else {
+      if (d.done.length) h += '<div class="lcard">' + d.done.map(function (x) { return prow(x, true); }).join('') + '</div><p class="hint">最近 ' + d.doneDays + ' 天處理的品項。選錯了就改成別的處理方式；改回「未處理」就是復原，會重新提醒。</p>';
+      else h += '<div class="empty">最近 ' + d.doneDays + ' 天沒有處理紀錄。</div>';
+    }
+    $('pbody').innerHTML = h;
+    updateBar();
+  }
+  function setEdit(x, v) {
+    if (v === x.status) delete P.edits[x.id]; else P.edits[x.id] = v;
+    P.confirmDel = false; $('perr').hidden = true;
+  }
+  function updateBar() {
+    var n = Object.keys(P.edits).length;
+    $('pcount').innerHTML = n ? '已變更 <b>' + n + '</b> 筆' : '還沒有變更';
+    $('psubmit').disabled = !n || P.sending;
+  }
+  function perr(t, warn) {
+    var e = $('perr'); e.textContent = t; e.className = 'err' + (warn ? ' warn' : ''); e.hidden = false;
+    e.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  $('pbody').addEventListener('change', function (e) {
+    var t = e.target;
+    if (t.id === 'bulk') {
+      var v = t.value; if (!v) return;
+      P.data.pending.forEach(function (x) { if (x.due) setEdit(x, v); });
+      var y = window.scrollY; renderProc(); window.scrollTo(0, y);
+      return;
+    }
+    if (t.classList && t.classList.contains('st')) {
+      var x = findItem(+t.getAttribute('data-id')); if (!x) return;
+      setEdit(x, t.value);
+      t.closest('.lrow').classList.toggle('chg', P.edits.hasOwnProperty(x.id));
+      updateBar();
+    }
+  });
+  $('ptabs').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-tab]') : null;
+    if (!b || !P || b.getAttribute('data-tab') === P.tab) return;
+    P.tab = b.getAttribute('data-tab'); renderProc(); window.scrollTo(0, 0);
+  });
+
+  $('psubmit').onclick = function () {
+    var ids = Object.keys(P.edits);
+    if (!ids.length || P.sending) return;
+    var dels = ids.filter(function (id) { return P.edits[id] === P.data.deleted; }).length;
+    if (dels && !P.confirmDel) {
+      P.confirmDel = true;
+      perr('有 ' + dels + ' 筆選了「' + P.data.deleteLabel + '」，刪除後不會再提醒。\n確定的話請再按一次「完成送出」。', true);
+      return;
+    }
+    P.sending = true; $('psubmit').textContent = '送出中…'; updateBar(); $('perr').hidden = true;
+    var changes = ids.map(function (id) { return { id: +id, status: P.edits[id] }; });
+    api({ idToken: liff.getIDToken(), op: 'update', store: P.data.store.code, changes: changes }).then(function (res) {
+      if (!res.ok) { failProc(errText(res.error) + (res.error === 'invalid_token' ? '\n（這次的選擇還沒送出）' : '')); return; }
+      var parts = Object.keys(res.counts).map(function (k) { return k + ' ' + res.counts[k]; }).join('、');
+      var text = '✔ 處理完成 ' + P.data.store.code + ' ' + P.data.store.name + '\n' + parts;
+      var msg = '已儲存 ' + res.updated + ' 筆（' + parts + '）。\n' + (res.remaining ? '這家店還有 ' + res.remaining + ' 筆待處理。' : '這家店的提醒品項都處理完了 ✓');
+      if (liff.isInClient()) {
+        liff.sendMessages([{ type: 'text', text: text }]).then(function () { liff.closeWindow(); })
+          .catch(function () { procDone(msg); });
+      } else {
+        procDone(msg);
+      }
+    }).catch(function (e) {
+      failProc('送出失敗，請確認網路後再按一次。\n（' + (e && e.message ? e.message : e) + '）');
+    });
+  };
+  function failProc(t) { P.sending = false; $('psubmit').textContent = '完成送出'; updateBar(); perr(t); }
+  function procDone(msg) {
+    $('proc').hidden = true; $('pbar').hidden = true;
+    show(msg + '\n\n資料已經存好，可以關閉這個畫面。');
   }
 })();
 </script>
