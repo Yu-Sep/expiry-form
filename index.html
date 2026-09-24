@@ -3,7 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>新增效期紀錄</title>
+<title>菸品效期小幫手</title>
+<script>
+  // 一載入就先判斷是「新增紀錄」還是「店家處理頁」（?store=…；第一次開啟時參數包在 liff.state 裡），
+  // 標題不會先閃成「新增效期紀錄」，處理頁的店名也能馬上顯示。
+  window.START = (function () {
+    var q = new URLSearchParams(location.search), st = q.get('liff.state');
+    if (!q.get('store') && st) {
+      var s = st;
+      if (s.indexOf('%') >= 0) { try { s = decodeURIComponent(s); } catch (e) {} }
+      var i = s.indexOf('?');
+      if (i >= 0) q = new URLSearchParams(s.slice(i + 1));
+    }
+    var o = { store: (q.get('store') || '').trim(), tab: q.get('tab') === 'done' ? 'done' : 'pending', name: (q.get('n') || '').trim() };
+    document.title = o.store ? '處理效期品項' : '新增效期紀錄';
+    return o;
+  })();
+</script>
+<link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
   :root{--bg:#F3F5F1;--surface:#fff;--ink:#19201C;--ink2:#4B5550;--ink3:#78827D;--rule:#D4DAD5;--accent:#17704C;--soft:#DBEEE3;--warn:#9A4A0A;--warn-bg:#FBE8D4;--bad:#B1261D;--bad-bg:#F7DDD9}
@@ -208,31 +226,32 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
       body: JSON.stringify(body)
     }).then(function (r) { return r.json(); });
   }
-  // LIFF 網址後面的參數（?store=…&tab=…）；第一次開啟時會包在 liff.state 裡
-  function readParams() {
-    var q = new URLSearchParams(location.search);
-    var st = q.get('liff.state');
-    if (!q.get('store') && st) {
-      var s = st;
-      if (s.indexOf('%') >= 0) { try { s = decodeURIComponent(s); } catch (e) {} }
-      var i = s.indexOf('?');
-      if (i >= 0) q = new URLSearchParams(s.slice(i + 1));
-    }
-    return { store: (q.get('store') || '').trim(), tab: q.get('tab') === 'done' ? 'done' : 'pending' };
-  }
+  function fatal(msg) { $('proc').hidden = true; $('pbar').hidden = true; show(msg, true); }
 
   if (LIFF_ID.indexOf('請貼上') === 0 || API_URL.indexOf('請貼上') === 0) {
-    show('網頁已經上線，但 index.html 裡的 LIFF ID 或 Apps Script 網址還沒填。', true);
+    fatal('網頁已經上線，但 index.html 裡的 LIFF ID 或 Apps Script 網址還沒填。');
     return;
   }
-  if (typeof liff === 'undefined') { show('無法載入 LINE 元件，請確認網路後重新開啟。', true); return; }
+  if (typeof liff === 'undefined') { fatal('無法載入 LINE 元件，請確認網路後重新開啟。'); return; }
+
+  // 處理頁：LINE 元件還在啟動時就先把店名、分頁畫出來，品項讀好再補上
+  if (START.store) {
+    $('prep').textContent = '…';
+    $('pname').textContent = START.name || START.store;
+    $('pcode').textContent = START.name ? START.store : '';
+    $('tabP').textContent = '待處理'; $('tabD').textContent = '已處理';
+    $('tabP').className = START.tab === 'pending' ? 'on' : ''; $('tabD').className = START.tab === 'done' ? 'on' : '';
+    $('pbody').innerHTML = '<div class="empty">讀取品項中…</div>';
+    status.hidden = true; $('proc').hidden = false;
+  }
+  // 趁 LINE 元件啟動的空檔先叫醒 Apps Script（閒置一陣子後第一次呼叫最慢）
+  try { fetch(API_URL, { method: 'GET', mode: 'no-cors', cache: 'no-store' }).catch(function () {}); } catch (e) {}
 
   liff.init({ liffId: LIFF_ID }).then(function () {
     if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
     var idToken = liff.getIDToken();
-    if (!idToken) { show('取不到登入資訊，請關閉後重新開啟表單。', true); return; }
-    var prm = readParams();
-    if (prm.store) { startProc(idToken, prm.store, prm.tab); return; }
+    if (!idToken) { fatal('取不到登入資訊，請關閉後重新開啟表單。'); return; }
+    if (START.store) { startProc(idToken, START.store, START.tab); return; }
     show('讀取店家與品項…');
     return api({ idToken: idToken }).then(function (res) {
       if (!res.ok) { show(errText(res.error), true); return; }
@@ -240,7 +259,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
       render();
     });
   }).catch(function (e) {
-    show('無法啟動表單：' + (e && e.message ? e.message : e) + '\n請管理員確認 LIFF ID 與 Apps Script 網址。', true);
+    fatal('無法啟動表單：' + (e && e.message ? e.message : e) + '\n請管理員確認 LIFF ID 與 Apps Script 網址。');
   });
 
   function yearOptions(short) { var y = data.year; return [y, y + 1, y + 2].map(function (v) { return '<option value="' + v + '">' + v + (short ? '' : ' 年') + '</option>'; }).join(''); }
@@ -521,15 +540,13 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
   var GROUPS = [['exp', '已過期'], ['this', '本月到期'], ['next', '下個月到期'], ['later', '更晚到期（提醒期內）']];
 
   function startProc(idToken, store, tab) {
-    document.title = '處理效期品項';
-    show('讀取店家品項…');
     api({ idToken: idToken, op: 'store', store: store }).then(function (res) {
-      if (!res.ok) { show(errText(res.error), true); return; }
+      if (!res.ok) { fatal(errText(res.error)); return; }
       P = { data: res, tab: tab, edits: {}, sending: false, confirmDel: false };
       renderProc();
       status.hidden = true; $('proc').hidden = false; $('pbar').hidden = false;
     }).catch(function (e) {
-      show('讀取失敗，請確認網路後重新開啟。\n（' + (e && e.message ? e.message : e) + '）', true);
+      fatal('讀取失敗，請確認網路後重新開啟。\n（' + (e && e.message ? e.message : e) + '）');
     });
   }
 
