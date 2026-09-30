@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>菸品效期小幫手</title>
 <script>
-  // 版本：2026-09-24 i（處理頁附照片、代理的店）
+  // 版本：2026-09-30 j（處理頁「備註」分頁、快／慢銷；新增表單可從網址帶入店家與品項 ?add=店家代碼&code=品項代碼）
   // 一載入就先判斷是「新增紀錄」還是「店家處理頁」（?store=…；第一次開啟時參數包在 liff.state 裡），
   // 標題不會先閃成「新增效期紀錄」，處理頁的店名也能馬上顯示。
   window.START = (function () {
@@ -16,7 +16,9 @@
       var i = s.indexOf('?');
       if (i >= 0) q = new URLSearchParams(s.slice(i + 1));
     }
-    var o = { store: (q.get('store') || '').trim(), tab: q.get('tab') === 'done' ? 'done' : 'pending', name: (q.get('n') || '').trim() };
+    var tb = q.get('tab');
+    var o = { store: (q.get('store') || '').trim(), tab: tb === 'done' || tb === 'note' ? tb : 'pending', name: (q.get('n') || '').trim(),
+      add: (q.get('add') || '').trim().toUpperCase(), code: (q.get('code') || '').trim().toUpperCase() };
     document.title = o.store ? '處理效期品項' : '新增效期紀錄';
     return o;
   })();
@@ -141,7 +143,7 @@
   .phead b{display:block;font-size:21px;color:var(--accent);line-height:1.35}
   .phead small{font-size:13px;color:var(--ink3);font-family:ui-monospace,Menlo,Consolas,monospace}
   .again{flex:none;border:1.5px solid var(--accent);background:var(--surface);color:var(--accent);border-radius:999px;font:inherit;font-size:14px;font-weight:700;padding:7px 12px;margin-top:2px}
-  .ptabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:12px 0}
+  .ptabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:12px 0}
   .ptabs button{border:1.5px solid #CFE3DA;background:var(--surface);color:var(--accent);border-radius:10px;padding:10px 4px;font:inherit;font-size:15px;font-weight:700}
   .ptabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
   .bulk{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:8px 10px;font-size:14px;font-weight:700;color:var(--ink2)}
@@ -181,6 +183,33 @@
   .qline .phb{margin-left:auto}
   .lt .info .phb{margin-top:2px}
   .vh{position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0}   /* 有些手機不能點 display:none 的檔案欄位 */
+
+  /* ---------- 備註分頁與快／慢銷（j 版） ---------- */
+  .hb.spf{background:#D9EFE2;color:#146442}
+  .hb.sps{background:#F6E3C8;color:#8A4F0C}
+  textarea.pnote{width:100%;font:inherit;font-size:16px;line-height:1.5;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--surface);color:var(--ink);resize:vertical;min-height:80px}
+  .lc{font-weight:400;color:var(--ink3)}
+  .trow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:11px 0;border-bottom:1px solid var(--rule)}
+  .trow:last-child{border-bottom:0}
+  .tt b{display:block;font-size:15px;line-height:1.35}
+  .tt small{display:block;color:var(--ink3);font-size:12px}
+  .tt .warn{color:#B3580E;font-weight:700}
+  .tt .rec{border:0;background:none;padding:0 0 0 6px;font:inherit;font-size:12px;font-weight:700;color:var(--accent);text-decoration:underline}
+  .spd{display:grid;grid-template-columns:42px 42px;gap:4px}
+  .spd button,.nr button{height:38px;border-radius:8px;font:inherit;font-size:15px;font-weight:700;padding:0;background:var(--surface)}
+  .spd button.f,.nr button.f{border:1.5px solid #9FD0B5;color:#146442}
+  .spd button.s,.nr button.s{border:1.5px solid #E6BF8C;color:#8A4F0C}
+  .spd button.f.on{background:#146442;border-color:#146442;color:#fff}
+  .spd button.s.on{background:#8A4F0C;border-color:#8A4F0C;color:#fff}
+  .trow input.tnote{grid-column:1/-1;width:100%;font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:#FAFBF9;color:var(--ink);-webkit-appearance:none;appearance:none}
+  .nres{margin-top:8px;border:1px solid var(--rule);border-radius:10px;background:var(--surface);max-height:240px;overflow-y:auto}
+  .nr{display:grid;grid-template-columns:4.2em minmax(0,1fr) 42px 42px;gap:6px;align-items:center;padding:6px 8px 6px 12px;border-bottom:1px solid var(--rule);font-size:15px}
+  .nr:last-child{border-bottom:0}
+  .nr code{font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--ink3);font-size:13px;word-break:break-all}
+  .nr span{min-width:0;word-break:break-all}
+  .nr em{font-style:normal;margin-left:6px;font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;background:#E3E8E4;color:#4B5550}
+  .nres .none{padding:12px;color:var(--ink3);font-size:14px}
+  #psave{background:var(--accent)}
 </style>
 </head>
 <body>
@@ -246,13 +275,14 @@
     <div class="ptabs" id="ptabs" role="tablist" aria-label="分頁">
       <button type="button" id="tabP" data-tab="pending" role="tab"></button>
       <button type="button" id="tabD" data-tab="done" role="tab"></button>
+      <button type="button" id="tabN" data-tab="note" role="tab"></button>
     </div>
     <div id="pbody"></div>
     <p id="perr" class="err" hidden></p>
   </div>
 </div>
 <div id="fbar" class="bar" hidden><div class="bar-in"><span id="fcount">還沒有加入品項</span><button type="submit" form="form" id="submit">送出紀錄</button></div></div>
-<div id="pbar" class="bar" hidden><div class="bar-in"><span id="pcount">還沒有變更</span><button type="button" id="psubmit" disabled>完成送出</button></div></div>
+<div id="pbar" class="bar" hidden><div class="bar-in"><span id="pcount">還沒有變更</span><button type="button" id="psubmit" disabled>完成送出</button><button type="button" id="psave" hidden disabled>儲存備註</button></div></div>
 <div id="sheet" class="sheet" hidden></div>
 <input type="file" id="phfile" accept="image/*" class="vh" tabindex="-1" aria-hidden="true">
 
@@ -289,6 +319,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     not_configured: '管理員尚未在 Apps Script 設定 LIFF_CHANNEL_ID。',
     invalid_token: '登入資訊已過期，請關閉後重新開啟。',
     no_store: '找不到這家店，或這家店不在你負責的清單裡（代理期間結束後，被代理人的店就不會再出現）。',
+    not_saved: '備註還沒存好，請再按一次「儲存備註」。',
     no_record: '找不到這一筆紀錄，請關閉後重新開啟。',
     photo_off: '管理員已關閉照片功能。',
     photo_limit: '這一筆的照片已經滿了（最多 5 張）。',
@@ -313,7 +344,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
   function twNow() { var d = new Date(Date.now() + 8 * 3600000); return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1 }; }
   function fromCache(c) {
     var t = twNow();
-    return { rep: c.rep, repCode: c.repCode, stores: c.stores, products: c.products, recent: c.recent || [], recentStores: c.recentStores || [], year: t.y, month: t.m, maxMonths: 18 };
+    return { rep: c.rep, repCode: c.repCode, stores: c.stores, products: c.products, recent: c.recent || [], recentStores: c.recentStores || [], tags: c.tags || {}, year: t.y, month: t.m, maxMonths: 18 };
   }
   function setSync(kind, text) {
     var el = $('sync');
@@ -333,8 +364,8 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     $('prep').textContent = '…';
     $('pname').textContent = START.name || START.store;
     $('pcode').textContent = START.name ? START.store : '';
-    $('tabP').textContent = '待處理'; $('tabD').textContent = '已處理';
-    $('tabP').className = START.tab === 'pending' ? 'on' : ''; $('tabD').className = START.tab === 'done' ? 'on' : '';
+    $('tabP').textContent = '待處理'; $('tabD').textContent = '已處理'; $('tabN').textContent = '備註';
+    $('tabP').className = START.tab === 'pending' ? 'on' : ''; $('tabD').className = START.tab === 'done' ? 'on' : ''; $('tabN').className = START.tab === 'note' ? 'on' : '';
     $('pbody').innerHTML = '<div class="empty">讀取品項中…</div>';
     status.hidden = true; $('proc').hidden = false;
   } else {
@@ -369,7 +400,8 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
         fatal(errText(res.error));
         return;
       }
-      lsSet(CACHE_KEY, { rep: res.rep, repCode: res.repCode, stores: res.stores, products: res.products, recent: res.recent, recentStores: res.recentStores, t: Date.now() });
+      lsSet(CACHE_KEY, { rep: res.rep, repCode: res.repCode, stores: res.stores, products: res.products, recent: res.recent, recentStores: res.recentStores, tags: res.tags || {}, t: Date.now() });
+      if (!res.tags) res.tags = {};
       var first = !data;
       data = res;
       hist = { active: res.hist || [], codes: res.codes || {} };
@@ -393,18 +425,35 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     try { var saved = localStorage.getItem('expiry-form-mode'); if (saved === 'single') mode = 'single'; } catch (e) {}
     rowsB = [newRow()];
     offerDraft();
-    setMode(mode);
+    var forced = applyStart();
+    setMode(forced || mode, !!forced);
     renderItems();
     status.hidden = true;
     form.hidden = false; $('fbar').hidden = false;
+    if (forced) scrollToEntry();
   }
+  // ?add=店家代碼&code=品項代碼（聊天室「記效期」、處理頁備註分頁的「記效期」）：帶入店家，品項直接選好（同產品・多效期）
+  // 清單裡還沒有這家店時先保留，等背景更新完再帶入。回傳要切換的模式
+  function applyStart() {
+    if (!START.add || !storeName(START.add)) return '';
+    selStore = START.add; resetChecks();
+    var m = '';
+    if (START.code && nameOf(START.code)) { selCode = START.code; rowsB = [newRow()]; m = 'single'; }
+    START.add = ''; START.code = '';
+    renderStore();
+    return m;
+  }
+  function scrollToEntry() { setTimeout(function () { var el = $('xrows'); if (el) el.scrollIntoView({ block: 'center' }); }, 60); }
   // 背景拿到最新清單後更新畫面（不動業代正在填的內容）
   function refresh() {
     $('rep').textContent = data.rep;
     if (selStore && !storeName(selStore)) selStore = null;
+    var forced = applyStart();
     renderStore();
-    if (mode === 'multi') renderA(); else renderB();
+    if (forced) setMode(forced, true);
+    else if (mode === 'multi') renderA(); else renderB();
     renderItems();
+    if (forced) scrollToEntry();
   }
 
   /* ---------- 草稿（加入清單的品項自動存在手機上，誤關表單後可以接著填） ---------- */
@@ -481,6 +530,8 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     if (!hist) return [];
     return hist.active.filter(function (h) { return h[1] === store && h[2] === code; }).sort(function (a, b) { return a[3] < b[3] ? -1 : 1; });
   }
+  function tagsAt(store) { return (data && data.tags && data.tags[store]) || []; }
+  function speedOf(store, code) { var t = tagsAt(store); for (var i = 0; i < t.length; i++) if (t[i][0] === code) return t[i][1]; return ''; }
   function prodBtn(p, on) {
     var chips = '';
     if (selStore && hist) {
@@ -488,19 +539,25 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
       if (act.length) chips = act.map(function (h) { return '<em class="hb">追蹤中 ' + esc(h[3]) + '・' + h[4] + ' 包</em>'; }).join('');
       else if ((hist.codes[selStore] || []).indexOf(p[0]) >= 0) chips = '<em class="hb old">記過</em>';
     }
+    var sp = selStore ? speedOf(selStore, p[0]) : '';
+    if (sp) chips = '<em class="hb ' + (sp === '快' ? 'spf">快銷' : 'sps">慢銷') + '</em>' + chips;
     return '<button type="button" role="option" class="' + (on ? 'on' : '') + '" aria-selected="' + (on ? 'true' : 'false') + '" data-code="' + esc(p[0]) + '"><code>' + esc(p[0]) + '</code><span class="pw"><span>' + esc(p[1]) + '</span>' + (chips ? '<span class="hbs">' + chips + '</span>' : '') + '</span></button>';
   }
   // isOn(code)：該品項是否要顯示為已選
   function renderSearch(qId, listId, recentId, isOn) {
     var q = $(qId).value.trim().toLowerCase();
     var matches = data.products.filter(function (p) { return !q || p[0].toLowerCase().indexOf(q) >= 0 || p[1].toLowerCase().indexOf(q) >= 0; });
-    var mine = (!q && selStore && hist && hist.codes[selStore]) ? hist.codes[selStore].filter(nameOf) : [];
+    // 選好店家、沒有打字時：這家店的慢銷品排最前面，再來是這家店記過的
+    var slow = (!q && selStore) ? tagsAt(selStore).filter(function (t) { return t[1] === '慢' && nameOf(t[0]); }).map(function (t) { return t[0]; }) : [];
+    var mine = (!q && selStore && hist && hist.codes[selStore]) ? hist.codes[selStore].filter(function (c) { return nameOf(c) && slow.indexOf(c) < 0; }) : [];
+    var btns = function (codes) { return codes.map(function (c) { return prodBtn([c, nameOf(c)], isOn(c)); }).join(''); };
     var html;
     if (!matches.length) html = '<div class="none">找不到符合的品項</div>';
-    else if (mine.length) {
-      var top = mine.map(function (c) { return [c, nameOf(c)]; });
-      var rest = matches.filter(function (p) { return mine.indexOf(p[0]) < 0; });
-      html = '<div class="lgrp">這家店記過的（' + top.length + '）</div>' + top.map(function (p) { return prodBtn(p, isOn(p[0])); }).join('') +
+    else if (slow.length || mine.length) {
+      var used = slow.concat(mine);
+      var rest = matches.filter(function (p) { return used.indexOf(p[0]) < 0; });
+      html = (slow.length ? '<div class="lgrp">這家店的慢銷品（' + slow.length + '）</div>' + btns(slow) : '') +
+        (mine.length ? '<div class="lgrp">這家店記過的（' + mine.length + '）</div>' + btns(mine) : '') +
         (rest.length ? '<div class="lgrp">其他品項</div>' + rest.map(function (p) { return prodBtn(p, isOn(p[0])); }).join('') : '');
     } else html = matches.map(function (p) { return prodBtn(p, isOn(p[0])); }).join('');
     $(listId).innerHTML = html;
@@ -513,9 +570,9 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
   }
 
   /* ---------- 模式切換 ---------- */
-  function setMode(m) {
+  function setMode(m, noSave) {
     mode = m;
-    try { localStorage.setItem('expiry-form-mode', m); } catch (e) {}
+    if (!noSave) { try { localStorage.setItem('expiry-form-mode', m); } catch (e) {} }
     var segs = document.querySelectorAll('.seg button');
     for (var i = 0; i < segs.length; i++) { var on = segs[i].getAttribute('data-mode') === m; segs[i].className = on ? 'on' : ''; segs[i].setAttribute('aria-selected', on ? 'true' : 'false'); }
     $('pane-multi').hidden = m !== 'multi'; $('pane-single').hidden = m !== 'single';
@@ -804,7 +861,8 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
   function startProc(idToken, store, tab) {
     api({ idToken: idToken, op: 'store', store: store }).then(function (res) {
       if (!res.ok) { fatal(errText(res.error)); return; }
-      P = { data: res, tab: tab, edits: {}, sending: false, confirmDel: false, openNyet: false, ph: {} };
+      P = { data: res, tab: tab, edits: {}, sending: false, confirmDel: false, openNyet: false, ph: {},
+        noteD: copyNotes(res.notes), noteDirty: false, noteQ: '', noteSaving: false, noteSavedAt: '' };
       renderProc();
       status.hidden = true; $('proc').hidden = false; $('pbar').hidden = false; $('again').hidden = false;
     }).catch(function (e) {
@@ -875,10 +933,13 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     var due = d.pending.filter(function (x) { return x.due; });
     var nyet = d.pending.filter(function (x) { return !x.due; });
     $('tabP').textContent = '待處理 ' + due.length; $('tabD').textContent = '已處理 ' + d.done.length;
-    $('tabP').className = P.tab === 'pending' ? 'on' : ''; $('tabD').className = P.tab === 'done' ? 'on' : '';
-    $('tabP').setAttribute('aria-selected', P.tab === 'pending'); $('tabD').setAttribute('aria-selected', P.tab === 'done');
+    setNoteTab();
+    [['tabP', 'pending'], ['tabD', 'done'], ['tabN', 'note']].forEach(function (t) {
+      $(t[0]).className = P.tab === t[1] ? 'on' : ''; $(t[0]).setAttribute('aria-selected', P.tab === t[1]);
+    });
     var h = '';
-    if (P.tab === 'pending') {
+    if (P.tab === 'note') h = noteHtml();
+    else if (P.tab === 'pending') {
       if (due.length) {
         h += '<div class="bulk"><span>全部設為</span><select id="bulk" aria-label="全部待處理品項設為"><option value="">選擇…</option>' + bulkOpts() + '</select></div>';
         GROUPS.forEach(function (g) {
@@ -896,7 +957,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
       if (d.done.length) h += '<div class="lcard">' + d.done.map(function (x) { return prow(x, true); }).join('') + '</div><p class="hint">最近 ' + d.doneDays + ' 天處理的品項。選錯了就改成別的處理方式；改回「未處理」就是復原，會重新提醒。調撥的品項請到目的店家處理。</p>';
       else h += '<div class="empty">最近 ' + d.doneDays + ' 天沒有處理紀錄。</div>';
     }
-    if (d.photo && (P.tab === 'pending' ? d.pending.length : d.done.length)) h += '<p class="hint">📷 照片選填，當退貨、換貨、售完的佐證；按下去馬上存好，不用等「完成送出」。</p>';
+    if (d.photo && P.tab !== 'note' && (P.tab === 'pending' ? d.pending.length : d.done.length)) h += '<p class="hint">📷 照片選填，當退貨、換貨、售完的佐證；按下去馬上存好，不用等「完成送出」。</p>';
     var y = window.scrollY;
     $('pbody').innerHTML = h;
     window.scrollTo(0, y);
@@ -916,10 +977,96 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     return false;
   }
   function updateBar() {
-    var n = Object.keys(P.edits).length;
-    $('pcount').innerHTML = n ? '已變更 <b>' + n + '</b> 筆' : '還沒有變更';
-    $('psubmit').disabled = !n || P.sending;
+    var n = Object.keys(P.edits).length, note = P.tab === 'note';
+    $('psubmit').hidden = note; $('psave').hidden = !note;
+    if (note) {
+      $('pcount').innerHTML = P.noteSaving ? '儲存中…' : P.noteDirty ? '備註已修改，<b>還沒儲存</b>' : P.noteSavedAt ? '已儲存（' + P.noteSavedAt + '）' : '還沒有修改';
+      $('psave').disabled = !P.noteDirty || P.noteSaving;
+      $('psave').textContent = P.noteSaving ? '儲存中…' : '儲存備註';
+    } else {
+      $('pcount').innerHTML = (n ? '已變更 <b>' + n + '</b> 筆' : '還沒有變更') + (P.noteDirty ? '・備註還沒儲存' : '');
+      $('psubmit').disabled = !n || P.sending || P.noteSaving;
+    }
   }
+
+  /* ---------- 備註分頁（j 版）：店家備註＋品項標快／慢，按「儲存備註」直接寫入 ---------- */
+  function copyNotes(n) {
+    n = n || { text: '', tags: [] };
+    return { text: n.text || '', tags: (n.tags || []).map(function (t) { return [t[0], t[1], t[2] || '', t[3] || '']; }) };
+  }
+  function noteCount() { return P.noteD.tags.length + (P.noteD.text.trim() ? 1 : 0); }
+  function setNoteTab() { var c = noteCount(); $('tabN').textContent = P.noteDirty ? '備註 ✎' : '備註' + (c ? ' ' + c : ''); }
+  function pName(code) {
+    var ps = P.data.products || [];
+    for (var i = 0; i < ps.length; i++) if (ps[i][0] === code) return ps[i][1];
+    var t = noteTag(code); return (t && t[3]) || '';
+  }
+  function noteTag(code) { for (var i = 0; i < P.noteD.tags.length; i++) if (P.noteD.tags[i][0] === code) return P.noteD.tags[i]; return null; }
+  function trackedHere(code) {
+    return P.data.pending.filter(function (x) { return String(x.code).toUpperCase() === code; }).sort(function (a, b) { return a.ym < b.ym ? -1 : a.ym > b.ym ? 1 : 0; });
+  }
+  function noteHtml() {
+    var d = P.noteD;
+    var f = d.tags.filter(function (t) { return t[1] === '快'; }), sl = d.tags.filter(function (t) { return t[1] === '慢'; });
+    var h = '<label class="lbl" for="pnote" style="margin-top:4px">店家備註</label>' +
+      '<textarea id="pnote" class="pnote" rows="3" maxlength="' + (P.data.noteMax || 200) + '" placeholder="例如：老闆週三下午不在，找老闆娘">' + esc(d.text) + '</textarea>' +
+      '<p class="hint">' + (P.data.noteMax || 200) + ' 字內。你和代理人在手機上看得到，主管在試算表看得到。</p>' +
+      '<span class="lbl">品項銷況 <span class="lc">快 ' + f.length + '・慢 ' + sl.length + '</span></span>';
+    if (!d.tags.length) h += '<div class="empty">還沒有標記。在下面搜尋品項，按「快」或「慢」加進來。</div>';
+    [['快銷', f], ['慢銷', sl]].forEach(function (g) {
+      if (g[1].length) h += '<div class="lsect">' + g[0] + '（' + g[1].length + '）</div><div class="lcard">' + g[1].map(trowHtml).join('') + '</div>';
+    });
+    h += '<label class="lbl" for="nq">加品項</label><input id="nq" type="search" placeholder="輸入代碼或品名搜尋" autocomplete="off" value="' + esc(P.noteQ) + '">' +
+      '<div id="nres" class="nres" role="list" aria-label="可以標記的品項">' + nresHtml() + '</div>' +
+      '<p class="hint">聊天室打「快 代碼」「慢 代碼」查各店；只打「慢」看全部慢銷品。</p>';
+    return h;
+  }
+  function trowHtml(t) {
+    var a = trackedHere(t[0]);
+    var st = a.length ? (a[0].bucket === 'exp' ? '已過期 ' : '追蹤中 ') + esc(a[0].ym) + '・' + a[0].qty + ' 包' + (a.length > 1 ? '（共 ' + a.length + ' 批）' : '')
+      : t[1] === '慢' ? '<span class="warn">⚠ 還沒記效期</span><button type="button" class="rec" data-rec="' + esc(t[0]) + '">記效期</button>' : '沒有追蹤中的效期';
+    return '<div class="trow"><div class="tt"><b>' + esc(pName(t[0]) || t[0]) + '</b><small>' + esc(t[0]) + '　' + st + '</small></div>' +
+      '<div class="spd" role="group" aria-label="' + esc(t[0]) + ' 銷況">' + ['快', '慢'].map(function (v) {
+        return '<button type="button" data-tc="' + esc(t[0]) + '" data-sp="' + v + '" class="' + (v === '快' ? 'f' : 's') + (t[1] === v ? ' on' : '') + '" aria-pressed="' + (t[1] === v) + '">' + v + '</button>';
+      }).join('') + '</div>' +
+      '<button type="button" class="x" data-trm="' + esc(t[0]) + '" aria-label="移除 ' + esc(t[0]) + ' 的標記">×</button>' +
+      '<input type="text" class="tnote" data-tn="' + esc(t[0]) + '" maxlength="' + (P.data.tagNoteMax || 30) + '" placeholder="一句話（選填），例如一週約 3 條" value="' + esc(t[2]) + '" aria-label="' + esc(t[0]) + ' 的備註"></div>';
+  }
+  function nresHtml() {
+    var q = P.noteQ.trim().toLowerCase(), tagged = {}, seen = {};
+    P.noteD.tags.forEach(function (t) { tagged[t[0]] = true; });
+    allProcItems().forEach(function (x) { seen[String(x.code).toUpperCase()] = true; });
+    var list = (P.data.products || []).filter(function (p) { return !tagged[p[0]] && (!q || p[0].toLowerCase().indexOf(q) >= 0 || p[1].toLowerCase().indexOf(q) >= 0); });
+    if (!q) list = list.filter(function (p) { return seen[p[0]]; }).concat(list.filter(function (p) { return !seen[p[0]]; }));   // 這家店記過的排前面
+    if (!list.length) return '<div class="none">' + (q ? '找不到符合的品項' : '全部品項都標過了') + '</div>';
+    return list.slice(0, 80).map(function (p) {
+      return '<div class="nr" role="listitem"><code>' + esc(p[0]) + '</code><span>' + esc(p[1]) + (seen[p[0]] ? '<em>記過</em>' : '') + '</span>' +
+        '<button type="button" class="f" data-add="' + esc(p[0]) + '" data-sp="快" aria-label="' + esc(p[0]) + ' 標成快銷">快</button>' +
+        '<button type="button" class="s" data-add="' + esc(p[0]) + '" data-sp="慢" aria-label="' + esc(p[0]) + ' 標成慢銷">慢</button></div>';
+    }).join('') + (list.length > 80 ? '<div class="none">還有 ' + (list.length - 80) + ' 項，請多打幾個字</div>' : '');
+  }
+  function noteChanged(rerender) { P.noteDirty = true; if (rerender) renderProc(); else { setNoteTab(); updateBar(); } }
+  // 回傳 Promise<是否成功>；沒有修改就直接成功
+  function saveNote() {
+    if (!P || !P.noteDirty) return Promise.resolve(true);
+    if (P.noteSaving) return Promise.resolve(false);
+    P.noteSaving = true; updateBar(); $('perr').hidden = true;
+    var d = P.noteD;
+    return api({ idToken: liff.getIDToken(), op: 'note', store: P.data.store.code, text: d.text, tags: d.tags.map(function (t) { return [t[0], t[1], t[2]]; }) }).then(function (res) {
+      P.noteSaving = false;
+      if (!res.ok) { updateBar(); perr(errText(res.error)); return false; }
+      P.data.notes = { text: res.text, tags: res.tags };
+      P.noteD = copyNotes(P.data.notes); P.noteDirty = false;
+      var w = new Date(Date.now() + 8 * 3600000); P.noteSavedAt = pad2(w.getUTCHours()) + ':' + pad2(w.getUTCMinutes());
+      renderProc();
+      return true;
+    }).catch(function (e) {
+      P.noteSaving = false; updateBar();
+      perr('備註儲存失敗，請確認網路後再按一次「儲存備註」。\n（' + (e && e.message ? e.message : e) + '）');
+      return false;
+    });
+  }
+  $('psave').onclick = function () { saveNote(); };
   function perr(t, warn) {
     var e = $('perr'); e.textContent = t; e.className = 'err' + (warn ? ' warn' : ''); e.hidden = false;
     e.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -947,9 +1094,31 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
       if (zero) perr('剩餘改成 0，已經自動設為「' + P.data.soldOut + '」。', true);
     }
   });
+  $('pbody').addEventListener('input', function (e) {
+    var t = e.target;
+    if (!P || P.tab !== 'note') return;
+    if (t.id === 'pnote') { P.noteD.text = t.value; noteChanged(false); }
+    else if (t.hasAttribute && t.hasAttribute('data-tn')) { var g = noteTag(t.getAttribute('data-tn')); if (g) { g[2] = t.value; noteChanged(false); } }
+    else if (t.id === 'nq') { P.noteQ = t.value; $('nres').innerHTML = nresHtml(); }
+  });
   $('pbody').addEventListener('click', function (e) {
     var b = e.target.closest ? e.target.closest('button') : null;
     if (!b) return;
+    if (b.hasAttribute('data-add')) {
+      var c0 = b.getAttribute('data-add');
+      if (!noteTag(c0)) P.noteD.tags.push([c0, b.getAttribute('data-sp'), '', pName(c0)]);
+      P.noteQ = ''; noteChanged(true); return;
+    }
+    if (b.hasAttribute('data-tc')) {
+      var g = noteTag(b.getAttribute('data-tc'));
+      if (g && g[1] !== b.getAttribute('data-sp')) { g[1] = b.getAttribute('data-sp'); noteChanged(true); }
+      return;
+    }
+    if (b.hasAttribute('data-trm')) {
+      var c1 = b.getAttribute('data-trm');
+      P.noteD.tags = P.noteD.tags.filter(function (t) { return t[0] !== c1; }); noteChanged(true); return;
+    }
+    if (b.hasAttribute('data-rec')) { leaveToForm(b.getAttribute('data-rec')); return; }
     if (b.hasAttribute('data-qd') || b.hasAttribute('data-qu')) {
       var id = +(b.getAttribute('data-qd') || b.getAttribute('data-qu')), x = findItem(id); if (!x) return;
       var e0 = P.edits[id], cur = e0 && e0.qty != null ? e0.qty : x.qty;
@@ -1024,11 +1193,24 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
       '<p class="sh-note">最多 ' + x.qty + ' 包。沒調走的留在這家店繼續提醒；調過去的在新店照原效期提醒。</p>' +
       '<button type="button" class="sh-pri" id="xok" disabled>請先選目的店家</button><button type="button" class="sh-txt" id="xcancel">取消</button>',
       function () { renderProc(); });
+    // 這個品項標成快銷的店排最前面（顯示那一句話），慢銷的排最後
+    var tmap = {};
+    ((P.data.tt || {})[String(x.code).toUpperCase()] || []).forEach(function (t) { tmap[t[0]] = t; });
+    function spOf(c) { return tmap[c] ? tmap[c][1] : ''; }
+    function tbtn(s) {
+      var t = tmap[s[0]], chips = '';
+      if (t) chips = '<span class="hbs"><em class="hb ' + (t[1] === '快' ? 'spf">快銷' : 'sps">慢銷') + '</em>' + (t[2] ? '<em class="hb old">' + esc(t[2]) + '</em>' : '') + '</span>';
+      return '<button type="button" role="option" class="' + (X.to === s[0] ? 'on' : '') + '" data-to="' + esc(s[0]) + '"><code>' + esc(s[0]) + '</code><span class="pw"><span>' + esc(s[1]) + '</span>' + chips + '</span></button>';
+    }
     function list() {
       var q = $('xq').value.trim().toLowerCase();
-      var found = P.data.targets.filter(function (s) { return !q || s[0].toLowerCase().indexOf(q) >= 0 || s[1].toLowerCase().indexOf(q) >= 0; }).slice(0, 60);
+      var found = P.data.targets.filter(function (s) { return !q || s[0].toLowerCase().indexOf(q) >= 0 || s[1].toLowerCase().indexOf(q) >= 0; });
+      var fast = found.filter(function (s) { return spOf(s[0]) === '快'; });
+      var other = found.filter(function (s) { return spOf(s[0]) !== '快'; });
+      other = other.filter(function (s) { return spOf(s[0]) !== '慢'; }).concat(other.filter(function (s) { return spOf(s[0]) === '慢'; }));
+      other = other.slice(0, Math.max(0, 60 - fast.length));
       $('xlist').innerHTML = found.length
-        ? found.map(function (s) { return '<button type="button" role="option" class="' + (X.to === s[0] ? 'on' : '') + '" data-to="' + esc(s[0]) + '"><code>' + esc(s[0]) + '</code><span>' + esc(s[1]) + '</span></button>'; }).join('')
+        ? (fast.length ? '<div class="lgrp">' + esc(x.code) + ' 標成快銷的店（' + fast.length + '）</div>' + fast.map(tbtn).join('') + (other.length ? '<div class="lgrp">其他店</div>' : '') : '') + other.map(tbtn).join('')
         : '<div class="none">找不到符合的店家</div>';
       $('xok').disabled = !X.to;
       $('xok').textContent = X.to ? '確定調撥到 ' + targetName(X.to) : '請先選目的店家';
@@ -1056,6 +1238,10 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     if (dels && !P.confirmDel) {
       P.confirmDel = true;
       perr('有 ' + dels + ' 筆選了「' + P.data.deleteLabel + '」，刪除後不會再提醒。\n確定的話請再按一次「完成送出」。', true);
+      return;
+    }
+    if (P.noteDirty) {   // 備註有改但還沒存：先存備註，再送出處理結果
+      saveNote().then(function (ok) { if (ok) $('psubmit').onclick(); });
       return;
     }
     P.sending = true; $('psubmit').textContent = '送出中…'; updateBar(); $('perr').hidden = true;
@@ -1087,18 +1273,21 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     show(msg + '\n\n資料已經存好，可以關閉這個畫面。');
   }
 
-  /* 處理頁右上角「＋ 這家店再記一筆」：切到新增表單，店家自動帶入 */
-  $('again').onclick = function () {
-    if (!P) return;
+  /* 處理頁右上角「＋ 這家店再記一筆」、備註分頁的「記效期」：切到新增表單，店家（和品項）自動帶入；備註有改會先存 */
+  $('again').onclick = function () { leaveToForm(''); };
+  function leaveToForm(code) {
+    if (!P || P.noteSaving) return;
+    if (P.noteDirty) { saveNote().then(function (ok) { if (ok) leaveToForm(code); }); return; }
     var store = P.data.store.code;
     closeSheet(); $('proc').hidden = true; $('pbar').hidden = true;
     P = null; START.store = ''; document.title = '新增效期紀錄';
     selStore = store;
+    START.add = store; START.code = code || '';
     var c = lsGet(CACHE_KEY);
     if (c && c.stores && c.products) { data = fromCache(c); render(); setSync('busy', '背景更新清單中…'); }
-    window.scrollTo(0, 0);
+    if (!code) window.scrollTo(0, 0);
     loadForm(liff.getIDToken());
-  };
+  }
 })();
 </script>
 </body>
