@@ -5,12 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>菸品效期小幫手</title>
 <script>
-  // 版本：2026-09-30 j（處理頁「備註」分頁、快／慢銷；新增表單可從網址帶入店家與品項 ?add=店家代碼&code=品項代碼）
-  // 一載入就先判斷是「新增紀錄」還是「店家處理頁」（?store=…；第一次開啟時參數包在 liff.state 裡），
+  // 版本：2026-10-01 k（任務頁 ?task=任務編號&s=店家代碼；處理頁標出下架任務中的品項）
+  //       j 版：處理頁「備註」分頁、快／慢銷；新增表單可從網址帶入店家與品項 ?add=店家代碼&code=品項代碼
+  // 一載入就先判斷是「新增紀錄」「店家處理頁」（?store=…）還是「任務頁」（?task=…）；第一次開啟時參數包在 liff.state 裡，
   // 標題不會先閃成「新增效期紀錄」，處理頁的店名也能馬上顯示。
   window.START = (function () {
     var q = new URLSearchParams(location.search), st = q.get('liff.state');
-    if (!q.get('store') && st) {
+    if (!q.get('store') && !q.get('task') && st) {
       var s = st;
       if (s.indexOf('%') >= 0) { try { s = decodeURIComponent(s); } catch (e) {} }
       var i = s.indexOf('?');
@@ -18,8 +19,10 @@
     }
     var tb = q.get('tab');
     var o = { store: (q.get('store') || '').trim(), tab: tb === 'done' || tb === 'note' ? tb : 'pending', name: (q.get('n') || '').trim(),
-      add: (q.get('add') || '').trim().toUpperCase(), code: (q.get('code') || '').trim().toUpperCase() };
-    document.title = o.store ? '處理效期品項' : '新增效期紀錄';
+      add: (q.get('add') || '').trim().toUpperCase(), code: (q.get('code') || '').trim().toUpperCase(),
+      task: (q.get('task') || '').trim().toUpperCase(), s: (q.get('s') || '').trim().toUpperCase() };
+    if (o.task) o.store = '';
+    document.title = o.task ? '任務' : o.store ? '處理效期品項' : '新增效期紀錄';
     return o;
   })();
 </script>
@@ -210,6 +213,109 @@
   .nr em{font-style:normal;margin-left:6px;font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;background:#E3E8E4;color:#4B5550}
   .nres .none{padding:12px;color:var(--ink3);font-size:14px}
   #psave{background:var(--accent)}
+
+  /* ---------- 任務頁（k 版） ---------- */
+  .tp{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:4px;vertical-align:1px;white-space:nowrap}
+  .tp.dl{background:#FCE9CF;color:#8A4A06}
+  .tp.ct{background:#DCEBF5;color:#1F5E8A}
+  .tk-top{background:var(--surface);border:1px solid var(--rule);border-radius:12px;padding:12px 14px}
+  .tk-code{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--ink3);font-family:ui-monospace,Menlo,Consolas,monospace}
+  .rl{flex:none;border:0;background:none;color:var(--accent);font:inherit;font-family:"Noto Sans TC","PingFang TC",system-ui,sans-serif;font-size:13px;font-weight:700;padding:4px 0}
+  .tk-name{display:block;font-size:20px;color:var(--accent);line-height:1.3;margin-top:2px}
+  .tk-due,.phase{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:6px;font-size:14px;font-weight:700}
+  .phase.sub{font-weight:400;font-size:13px;margin-top:2px}
+  .cd{padding:2px 9px;border-radius:999px;background:#FCE9CF;color:#8A4A06;font-size:12.5px;font-weight:700}
+  .cd.red{background:#F7DDD9;color:#B1261D}
+  .cd.gry{background:#E3E8E4;color:#4B5550}
+  .chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+  .chips span{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:#EEF1ED;color:#4B5550;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .tk-desc{margin:8px 0 0;padding:8px 10px;border-radius:8px;background:#F4F6F2;font-size:13px;line-height:1.55;color:var(--ink2);white-space:pre-line}
+  .tk-prog{margin:12px 2px 0}
+  .tk-bar{height:8px;border-radius:4px;background:#E3E8E4;overflow:hidden}
+  .tk-bar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+  .tk-st{display:flex;flex-wrap:wrap;gap:2px 14px;margin-top:6px;font-size:13px;color:var(--ink2)}
+  .tk-st b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .tk-st .w,.tk-st .w b{color:#B3580E}
+  #tbody .ptabs button{font-size:14px;padding:10px 2px}
+  .tslist{display:grid;gap:8px}
+  .tsrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;width:100%;text-align:left;background:var(--surface);border:1px solid var(--rule);border-radius:10px;padding:10px 12px;font:inherit;color:var(--ink)}
+  .tsrow b{font-size:15.5px;line-height:1.35}
+  .tsrow .tsn{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;min-width:0}
+  .tsrow small{display:block;font-size:11.5px;color:var(--ink3);font-family:ui-monospace,Menlo,Consolas,monospace}
+  .ts-r{text-align:right;font-size:13.5px;font-weight:700;white-space:nowrap}
+  .ts-r small{font-family:inherit;font-weight:400}
+  .st-un{color:#B3580E}.st-has{color:#1F5E8A}.st-done{color:var(--ink3)}.st-ret{color:var(--accent)}.st-lock{color:var(--bad)}
+  .ts-lots{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px}
+  .lotchip{font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:4px;background:#EEF1ED;color:#4B5550;font-variant-numeric:tabular-nums}
+  .lotchip.near{background:#FBE8D4;color:#9A4A0A}
+  .chtag{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:4px;background:#DCEBF5;color:#1F5E8A}
+  .hb.ot{background:#EDE7F6;color:#5A3F8F}
+  .tk-rule{margin:14px 2px 0;font-size:12px;line-height:1.6;color:var(--ink3)}
+  .tk-rule b{color:#9A4A0A}
+  .tk-closed{margin-top:16px;padding:22px 16px;border-radius:12px;background:var(--surface);text-align:center;color:var(--ink2)}
+  .tk-closed small{color:var(--ink3)}
+  #tbar .bar-in span b{color:var(--accent)}
+
+  /* 任務頁的店家面板（底部彈出） */
+  .sh-hd{display:flex;align-items:flex-start;gap:8px}
+  .sh-hd>div{flex:1;min-width:0}
+  .sh-hd .sh-t{display:block;font-size:18px;line-height:1.35}
+  .sh-hd small{display:block;font-size:12px;color:var(--ink3);font-family:ui-monospace,Menlo,Consolas,monospace}
+  .sh-hd .tgs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+  .sh-hd .tgs:empty{display:none}
+  .sh-hd .x{height:36px;margin:-6px -6px 0 0}
+  .bk{flex:none;border:0;background:transparent;font-size:26px;line-height:1;color:var(--ink);width:34px;height:34px;padding:0;margin:-4px 0 0 -6px}
+  .other{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:#F1EDF9;color:#4A3A78;font-size:13px;line-height:1.45}
+  .other span{flex:1;min-width:0}
+  .other button{flex:none;border:1px solid #B9A9E0;background:var(--surface);color:#4A3A78;border-radius:6px;font:inherit;font-size:13px;font-weight:700;padding:6px 10px}
+  .rlots{display:grid;gap:8px}
+  .rlot{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) auto 30px;gap:6px;align-items:center}
+  .rlot select{padding:10px 22px 10px 8px;font-size:15px;background-position:calc(100% - 13px) 50%,calc(100% - 8px) 50%}
+  .rlot .x{width:30px;padding:6px 0}
+  .rlot .nearw{grid-column:1/-1;justify-self:start}
+  @media (max-width:350px){.rlot{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) 30px}.rlot .q3{grid-column:1/3}}
+  .nearw{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:4px;background:#FBE8D4;color:#9A4A0A}
+  .lots{display:grid;gap:8px}
+  .lot{display:grid;gap:8px;padding:10px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--surface)}
+  .lot-h{display:flex;align-items:center;gap:8px}
+  .lot-h b{font-size:16px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .lot-h .q{margin-left:auto;font-weight:700;font-size:15px}
+  .lot-a{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:14px;color:var(--ink2)}
+  .ab{border:1.5px solid var(--accent);background:var(--surface);color:var(--accent);border-radius:8px;font:inherit;font-size:14px;font-weight:700;padding:8px 12px}
+  .ab.sv{background:var(--accent);color:#fff}
+  .ab.ret{border-color:#D3A877;color:#8A4F0C}
+  .ab:disabled{opacity:.5}
+  .sh-pri.red{background:#B1261D}
+  .sh-pri.red:disabled{background:#D9A9A4}
+  .sh-sec:disabled{opacity:.5}
+  .hist{display:grid;gap:2px;padding:8px 10px;border-radius:8px;background:#F4F6F2;font-size:12px;line-height:1.55;color:var(--ink2)}
+  .hist b{font-size:11.5px;color:var(--ink3)}
+  .shnote{margin:0;padding:8px 10px;border-radius:8px;background:#EEF4F8;color:#1F4E6E;font-size:13px;line-height:1.55}
+  .sh .lbl{margin:4px 0 -4px}
+  .sh .err{margin:0}
+  .list.tgt{max-height:260px;margin-top:0}
+  .list.tgt button small{display:block;font-size:12px;color:var(--ink3)}
+  .list.tgt button small.f{color:#146442}
+  .list.tgt button small.s{color:#8A4F0C}
+  .list.tgt button b{font-size:15px}
+  .sh input[type=text]{width:100%;font:inherit;font-size:16px;padding:11px 12px;border:1px solid var(--rule);border-radius:10px;background:var(--surface);color:var(--ink);-webkit-appearance:none;appearance:none}
+  .ctot{display:flex;justify-content:space-between;font-weight:700;font-size:15px;padding:4px 2px}
+  .rdl{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:4px;background:#DCEBF5;color:#1F5E8A}
+  .cnts{display:grid;border:1px solid var(--rule);border-radius:10px;background:var(--surface);padding:0 12px}
+  .cnt{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--rule)}
+  .cnt:last-child{border-bottom:0}
+  .cnt b{display:block;font-size:15px;line-height:1.35}
+  .cnt small{display:block;font-size:12px;color:var(--ink3);font-family:ui-monospace,Menlo,Consolas,monospace}
+  .cnt.empty-v b{color:#8A4A06}
+  .q3 input:placeholder-shown{background:#FFF6D1;border-color:#EBD58A}
+  .cntv{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+  .zero{justify-self:start;border:0;background:none;color:var(--accent);font:inherit;font-size:14px;font-weight:700;text-decoration:underline;padding:4px 0}
+  .lockbox{padding:14px;border-radius:10px;background:var(--bad-bg);color:var(--bad);font-size:14px;line-height:1.55}
+  .toast{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:30;width:max-content;max-width:calc(100vw - 32px);padding:10px 16px;border-radius:10px;background:#18201B;color:#F2F7F3;font-size:14px;line-height:1.5;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+
+  /* 處理頁：下架任務中的品項（k 版） */
+  .tkgo{display:block;width:100%;margin:0 0 8px;border:1.5px solid #9DBFD9;border-radius:10px;background:#EEF4F8;color:#1F5E8A;font:inherit;font-size:15px;font-weight:700;padding:10px}
+  details.nyet .hint{margin:0 2px 8px}
 </style>
 </head>
 <body>
@@ -280,10 +386,18 @@
     <div id="pbody"></div>
     <p id="perr" class="err" hidden></p>
   </div>
+
+  <!-- 任務頁（k 版）：從聊天室的任務卡「開啟任務」打開（網址帶 ?task=任務編號） -->
+  <div id="task" hidden>
+    <p class="who">業代：<b id="trep"></b></p>
+    <div id="tbody"></div>
+  </div>
 </div>
 <div id="fbar" class="bar" hidden><div class="bar-in"><span id="fcount">還沒有加入品項</span><button type="submit" form="form" id="submit">送出紀錄</button></div></div>
 <div id="pbar" class="bar" hidden><div class="bar-in"><span id="pcount">還沒有變更</span><button type="button" id="psubmit" disabled>完成送出</button><button type="button" id="psave" hidden disabled>儲存備註</button></div></div>
+<div id="tbar" class="bar" hidden><div class="bar-in"><span id="tcount">每個動作按下去就存好了</span><button type="button" id="tdone">回聊天室</button></div></div>
 <div id="sheet" class="sheet" hidden></div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <input type="file" id="phfile" accept="image/*" class="vh" tabindex="-1" aria-hidden="true">
 
 <script>
@@ -327,7 +441,18 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     bad_request: '照片讀取失敗，請重拍一次。',
     no_changes: '沒有需要送出的變更。',
     nothing_changed: '這些品項的狀態已經是你選的了（可能剛才已經送出過）。請關閉後重新開啟看看。',
-    server_error: '伺服器發生錯誤，請稍後再試；一直失敗請通知管理員。'
+    server_error: '伺服器發生錯誤，請稍後再試；一直失敗請通知管理員。',
+    no_task: '找不到這個任務，或任務還沒開始。\n請回聊天室打「任務」看目前的任務。',
+    not_in_task: '這個任務裡沒有你負責的店（或這家店不在任務名單裡）。',
+    task_closed: '這個任務已經關閉了。',
+    bad_input: '數字有問題，請檢查後再送出。',
+    locked: '已經過了盤點截止日，不能再填了。沒盤到的請改用紙本交給主管。',
+    already_reported: '這家店剛才已經回報過了，已重新讀取。',
+    not_reported: '這家店還沒回報期初庫存，請先回報。',
+    no_lot: '這一批剛被改過（可能在處理頁或另一支手機），已重新讀取，請再看一次。',
+    bad_target: '只能調撥到同一位業代負責的店。',
+    not_yet: '下架日當天起才能回報到店回收。',
+    cvs_no_collect: 'CVS 下架後由門市自行物流退貨，不用回報回收。'
   };
   function errText(code) { return ERRS[code] || ('發生錯誤：' + code); }
   function api(body) {
@@ -338,7 +463,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     }).then(function (r) { return r.json(); });
   }
   function fatal(msg) {
-    form.hidden = true; $('fbar').hidden = true; $('proc').hidden = true; $('pbar').hidden = true; closeSheet();
+    form.hidden = true; $('fbar').hidden = true; $('proc').hidden = true; $('pbar').hidden = true; $('task').hidden = true; $('tbar').hidden = true; closeSheet();
     show(msg, true);
   }
   function twNow() { var d = new Date(Date.now() + 8 * 3600000); return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1 }; }
@@ -360,7 +485,9 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
 
   // 處理頁：LINE 元件還在啟動時就先把店名、分頁畫出來，品項讀好再補上
   // 新增表單：手機上有存清單的話，先用存的清單畫出表單，背景再更新
-  if (START.store) {
+  if (START.task) {
+    show('讀取任務中…');
+  } else if (START.store) {
     $('prep').textContent = '…';
     $('pname').textContent = START.name || START.store;
     $('pcode').textContent = START.name ? START.store : '';
@@ -386,7 +513,8 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     return idToken;
   });
   liffReady.then(function (idToken) {
-    if (START.store) startProc(idToken, START.store, START.tab);
+    if (START.task) startTask(idToken, START.task, START.s);
+    else if (START.store) startProc(idToken, START.store, START.tab);
     else loadForm(idToken);
   }).catch(function (e) {
     fatal('無法啟動表單：' + (e && e.message ? e.message : e) + '\n請管理員確認 LIFF ID 與 Apps Script 網址。');
@@ -883,8 +1011,14 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
   function tagOf(x) {
     if (!isActive(x)) { var c = statusColor(x.status); return '<span class="tag" style="background:' + c[0] + ';color:' + c[1] + '">' + esc(x.status) + '</span>'; }
     if (x.bucket === 'exp') return '<span class="tag" style="background:#F7DDD9;color:#B1261D">已過期</span>';
-    if (!x.due) return '<span class="tag" style="background:#E3E8E4;color:#4B5550">未到提醒期</span>';
+    if (!x.due) return x.hold ? '' : '<span class="tag" style="background:#E3E8E4;color:#4B5550">未到提醒期</span>';   // k 版：下架任務中的改顯示任務標籤
     return '<span class="tag" style="background:#FBE8D4;color:#9A4A0A">待處理</span>';
+  }
+  // k 版：下架任務中的品項；即期（效期在下架月含之前）照常提醒，其他批次改由任務提醒
+  function tkTag(x) {
+    if (!x.tk || !isActive(x)) return '';
+    return x.near ? '<span class="tag" style="background:#FBE8D4;color:#9A4A0A">⚠ 即期・' + esc(x.tk) + ' 下架</span>'
+      : '<span class="tag" style="background:#DCEBF5;color:#1F5E8A">📦 ' + esc(x.tk) + ' 下架任務</span>';
   }
   function infoCls(x) { return !isActive(x) ? 'c-done' : x.bucket === 'exp' ? 'c-exp' : !x.due ? 'c-not' : 'c-pend'; }
   function canXfer(x) { return isActive(x) && P.data.targets && P.data.targets.length; }
@@ -922,7 +1056,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     }
     if (isXfer(x) && x.note) extra += '<div class="xline done"><span>' + esc(x.note) + '</span></div>';
     return '<div class="lrow' + (chg ? ' chg' : '') + '"><div class="lt' + (isActive(x) ? '' : ' dim') + '"><b>' + esc(x.name) + '</b><small>' + esc(x.code) + '　#' + x.id + '</small>' +
-      '<div class="info">' + tagOf(x) + '<span class="' + infoCls(x) + '">' + esc(info) + '</span></div>' + (ph ? '<div class="info">' + ph + '</div>' : '') + '</div>' +
+      '<div class="info">' + tagOf(x) + tkTag(x) + '<span class="' + infoCls(x) + '">' + esc(info) + '</span></div>' + (ph ? '<div class="info">' + ph + '</div>' : '') + '</div>' +
       '<select class="st" data-id="' + x.id + '"' + (isXfer(x) ? ' disabled' : '') + ' aria-label="' + esc(x.name) + ' 的處理方式">' + optsHtml(cur, undoLabel, x) + '</select>' + extra + '</div>';
   }
   function renderProc() {
@@ -931,7 +1065,8 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     $('pname').textContent = d.store.name; $('pcode').textContent = d.store.code;
     $('pcov').hidden = !d.cover; $('pcov').textContent = d.cover ? '代理 ' + d.cover + ' 的店' : '';
     var due = d.pending.filter(function (x) { return x.due; });
-    var nyet = d.pending.filter(function (x) { return !x.due; });
+    var hold = d.pending.filter(function (x) { return !x.due && x.hold; });    // k 版：下架任務中、效期在下架日之後的批次
+    var nyet = d.pending.filter(function (x) { return !x.due && !x.hold; });
     $('tabP').textContent = '待處理 ' + due.length; $('tabD').textContent = '已處理 ' + d.done.length;
     setNoteTab();
     [['tabP', 'pending'], ['tabD', 'done'], ['tabN', 'note']].forEach(function (t) {
@@ -953,6 +1088,15 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
         var open = P.openNyet || nyet.some(function (x) { return P.edits.hasOwnProperty(x.id); });
         h += '<details class="nyet" id="nyet"' + (open ? ' open' : '') + '><summary>未到提醒期 ' + nyet.length + ' 筆（' + esc(nyet[0].ym) + ' 起）</summary><div class="lcard">' + nyet.map(function (x) { return prow(x); }).join('') + '</div></details>';
       }
+      if (hold.length) {
+        var tids = [];
+        hold.forEach(function (x) { if (tids.indexOf(x.tk) < 0) tids.push(x.tk); });
+        var openH = P.openHold || hold.some(function (x) { return P.edits.hasOwnProperty(x.id); });
+        h += '<details class="nyet" id="holdd"' + (openH ? ' open' : '') + '><summary>下架任務中 ' + hold.length + ' 筆（改由任務提醒）</summary>' +
+          '<p class="hint">效期在下架日之後的批次不列在待處理。回報、調撥、退貨請到任務頁做，數字才會算進任務。</p>' +
+          tids.map(function (id) { return '<button type="button" class="tkgo" data-tkgo="' + esc(id) + '">開啟任務 ' + esc(id) + '</button>'; }).join('') +
+          '<div class="lcard">' + hold.map(function (x) { return prow(x); }).join('') + '</div></details>';
+      }
     } else {
       if (d.done.length) h += '<div class="lcard">' + d.done.map(function (x) { return prow(x, true); }).join('') + '</div><p class="hint">最近 ' + d.doneDays + ' 天處理的品項。選錯了就改成別的處理方式；改回「未處理」就是復原，會重新提醒。調撥的品項請到目的店家處理。</p>';
       else h += '<div class="empty">最近 ' + d.doneDays + ' 天沒有處理紀錄。</div>';
@@ -962,6 +1106,7 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     $('pbody').innerHTML = h;
     window.scrollTo(0, y);
     var nd = $('nyet'); if (nd) nd.addEventListener('toggle', function () { if (P) P.openNyet = nd.open; });
+    var hd = $('holdd'); if (hd) hd.addEventListener('toggle', function () { if (P) P.openHold = hd.open; });
     updateBar();
   }
   function setEdit(x, v) {
@@ -1288,6 +1433,558 @@ var API_URL = 'https://script.google.com/macros/s/AKfycbw_mFv9HWZi4V3majq1DkemHf
     if (!code) window.scrollTo(0, 0);
     loadForm(liff.getIDToken());
   }
+
+  /* =====================================================================
+   * 任務頁（k 版）：從聊天室的任務卡「開啟任務」打開（網址 ?task=任務編號，指定店家再加 &s=店家代碼）
+   * 下架：回報期初庫存、改數量、調撥、退貨（下架回收／跨區換貨）、加一個效期、下架日到店回收（GT）
+   * 盤點：每家店每個品項填數量（沒賣填 0），截止前可以改，截止後鎖住
+   * 每個動作按下去就寫進試算表；最後按「完成，回聊天室」傳一則「✔ 任務更新 …」，機器人回進度卡
+   * ===================================================================== */
+  var T = null, TLOG = { lines: [], ids: [] }, toastT = 0;
+  var DLT = '下架', WDN = ['日', '一', '二', '三', '四', '五', '六'];
+  var DL_LABEL = { un: '未回報', has: '有庫存', ret: '已回收', none: '無庫存', clear: '已清空' };
+
+  function dnum(s) { var p = String(s).split('/'); return Date.UTC(+p[0], +p[1] - 1, +p[2]); }
+  function mdS(s) { var p = String(s).split('/'); return (+p[1]) + '/' + (+p[2]); }
+  function mdW(s) { return mdS(s) + '（' + WDN[new Date(dnum(s)).getUTCDay()] + '）'; }
+  function mIdx(s) { var p = String(s).split('/'); return (+p[0]) * 12 + (+p[1]) - 1; }
+  function ymS(y, m) { return y + '/' + pad2(m); }
+  function leftText(n) { return n > 0 ? '剩 ' + n + ' 天' : n === 0 ? '今天截止' : '已過 ' + (-n) + ' 天'; }
+  function dlLeft(n) { return n > 0 ? '剩 ' + n + ' 天' : n === 0 ? '今天下架' : '已過下架日 ' + (-n) + ' 天'; }
+  function roundName(rd) { return rd === 2 ? '活動後盤點' : '活動前盤點'; }
+  function toast(t) { var el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(function () { el.hidden = true; }, 3600); }
+  function tTask() { return T.data.task; }
+  function isDl() { return T.data.task.type === DLT; }
+  function itemCode() { return T.data.task.items[0][0]; }
+  function thisYear() { return +String(T.data.today).slice(0, 4); }
+  function storeBy(code) { var l = T.data.stores || []; for (var i = 0; i < l.length; i++) if (l[i].code === code) return l[i]; return null; }
+  function lotBy(x, id) { for (var i = 0; i < x.lots.length; i++) if (x.lots[i][0] === id) return x.lots[i]; return null; }
+  function remOf(x) { return (x.lots || []).reduce(function (a, l) { return a + l[2]; }, 0); }
+  function nearYm(y, m) { return y * 12 + m - 1 <= mIdx(tTask().e1); }
+  function dlSt(x) { if (x.r1 === '未回報') return 'un'; if (remOf(x) > 0) return 'has'; if (x.ret > 0) return 'ret'; if (x.r1 === '無庫存') return 'none'; return 'clear'; }
+  function cntDone(x) { return (tTask().rd === 2 ? x.r2 : x.r1) === '已回報'; }
+  function tabOf(x) { if (!isDl()) return cntDone(x) ? 'done' : 'un'; var s = dlSt(x); return s === 'un' ? 'un' : s === 'has' ? 'has' : 'done'; }
+  function byCode(a, b) { return a.code < b.code ? -1 : a.code > b.code ? 1 : 0; }
+  function stats() {
+    var o = { n: T.data.stores.length, un: 0, has: 0, done: 0, qty: 0, near: 0 };
+    T.data.stores.forEach(function (x) {
+      var tb = tabOf(x); o[tb]++;
+      if (isDl() && tb !== 'un') { o.qty += remOf(x); o.near += x.lots.filter(function (l) { return l[3]; }).length; }
+    });
+    return o;
+  }
+
+  function defaultTab() { var st = stats(); return isDl() ? (st.un ? 'un' : st.has ? 'has' : 'done') : (st.un ? 'un' : 'done'); }
+  function startTask(idToken, id, store) {
+    show('讀取任務中…');
+    api({ idToken: idToken, op: 'task', task: id }).then(function (res) {
+      if (!res.ok) { fatal(errText(res.error)); return; }
+      openTaskData(res, store);
+    }).catch(function (e) {
+      fatal('讀取失敗，請確認網路後重新開啟。\n（' + (e && e.message ? e.message : e) + '）');
+    });
+  }
+  function openTaskData(res, store) {
+    T = { data: res, tab: 'un', store: null, sub: null, busy: false, err: '', pq: {} };
+    document.title = '任務';
+    status.hidden = true; $('task').hidden = false; $('tbar').hidden = false;
+    var x = !res.closed && store ? storeBy(store) : null;
+    if (!res.closed) T.tab = x ? tabOf(x) : defaultTab();
+    renderTask(); updateTBar();
+    if (x) openStore(x.code);
+  }
+  function reloadTask(msg) {
+    var id = tTask().id, store = T.store;
+    T.busy = true;
+    api({ idToken: liff.getIDToken(), op: 'task', task: id }).then(function (res) {
+      if (!res.ok) { fatal(errText(res.error)); return; }
+      var ph0 = T.data.task.phase;
+      T.data = res; T.busy = false; T.sub = null; T.rpt = null; T.cf = null; T.pq = {}; T.confirmNone = false;
+      if (!res.closed && res.task.phase !== ph0) T.tab = defaultTab();   // 盤點換段（活動前 → 活動後）時回到預設分頁
+      T.err = msg || '';
+      renderTask();
+      if (store && !res.closed && storeBy(store)) { T.store = store; renderPanel(true); }
+      else { closeStore(); if (msg) toast(msg); }
+      if (!msg) toast('已更新到最新');
+    }).catch(function () {
+      T.busy = false; T.err = '連不上伺服器，請確認網路後再試。';
+      if (T.store) renderPanel(); else toast(T.err);
+    });
+  }
+  function switchTask(id, store) {
+    if (T.busy) return;
+    T.busy = true; renderPanel();
+    api({ idToken: liff.getIDToken(), op: 'task', task: id }).then(function (res) {
+      T.busy = false;
+      if (!res.ok || res.closed) { T.err = res.ok ? '那個任務已經關閉了。' : errText(res.error); renderPanel(); return; }
+      closeSheet(); window.scrollTo(0, 0);
+      openTaskData(res, store);
+      toast('已切換到 ' + id);
+    }).catch(function () { T.busy = false; T.err = '連不上伺服器，請確認網路後再試。'; renderPanel(); });
+  }
+
+  /* ---------- 任務頁本體 ---------- */
+  function typeChip(tp) { return '<span class="tp ' + (tp === DLT ? 'dl' : 'ct') + '">' + esc(tp) + '</span>'; }
+  function cdChip(text, red, gray) { return '<span class="cd' + (red ? ' red' : gray ? ' gry' : '') + '">' + esc(text) + '</span>'; }
+  function tagChip(g) { return g ? '<em class="hb ' + (g[0] === '快' ? 'spf">快銷' : 'sps">慢銷') + '</em>' : ''; }
+  function otherMark(x) { return x.others && x.others.length ? '<em class="hb ot">+' + x.others.length + ' 個任務</em>' : ''; }
+  function tabsHtml(tabs) {
+    return '<div class="ptabs" role="tablist" style="grid-template-columns:repeat(' + tabs.length + ',1fr)">' + tabs.map(function (x) {
+      return '<button type="button" role="tab" aria-selected="' + (T.tab === x[0]) + '" class="' + (T.tab === x[0] ? 'on' : '') + '" data-ta="tab" data-tab="' + x[0] + '">' + x[1] + '（' + x[2] + '）</button>';
+    }).join('') + '</div>';
+  }
+  function taskTopHtml() {
+    var d = T.data, t = d.task;
+    var h = '<div class="tk-top"><div class="tk-code"><span>' + typeChip(t.type) + ' ' + esc(t.id) + (t.type === DLT ? '・' + esc(t.items[0][0]) : '') + '</span>' +
+      (d.closed ? '' : '<button type="button" class="rl" data-ta="reload">↻ 重新整理</button>') + '</div><b class="tk-name">' + esc(t.title) + '</b>';
+    if (d.closed) return h + '</div>';
+    if (t.type === DLT) {
+      h += '<div class="tk-due"><span>' + mdW(t.e1) + ' 下架</span>' + cdChip(dlLeft(t.left), t.left <= 3) + (d.cvsOnly ? '<span class="chtag">CVS</span>' : '') + '</div>';
+    } else {
+      var ph = t.phase;
+      if (ph === 'r1' || ph === 'r2') h += '<div class="phase"><span>' + roundName(t.rd) + ' ' + mdS(t.rd === 2 ? t.s2 : t.s1) + '–' + mdS(t.rd === 2 ? t.e2 : t.e1) + '</span>' + cdChip(leftText(t.left), t.left <= 1) + '</div>';
+      else if (ph === 'mid') h += '<div class="phase"><span>活動前盤點已截止（' + mdS(t.e1) + '）</span>' + cdChip('活動期間', false, true) + '</div><div class="phase sub">活動後盤點 ' + mdS(t.s2) + '–' + mdS(t.e2) + '</div>';
+      else h += '<div class="phase"><span>活動後盤點已截止（' + mdS(t.e2) + '）</span>' + cdChip('已截止', false, true) + '</div>';
+      h += '<div class="chips">' + t.items.map(function (c) { return '<span>' + esc(c[0]) + '</span>'; }).join('') + '</div>';
+    }
+    return h + (t.desc ? '<p class="tk-desc">' + esc(t.desc) + '</p>' : '') + '</div>';
+  }
+  function renderTask() {
+    var d = T.data;
+    $('trep').textContent = d.rep || '';
+    var h = taskTopHtml();
+    if (d.closed) h += '<div class="tk-closed">這個任務已經關閉，不用再處理。<br><small>主管關閉後就不再提醒。</small></div>';
+    else h += isDl() ? dlListHtml() : ctListHtml();
+    var y = window.scrollY;
+    $('tbody').innerHTML = h;
+    window.scrollTo(0, y);
+  }
+  function dlListHtml() {
+    var d = T.data, st = stats(), doneN = st.n - st.un;
+    var h = '<div class="tk-prog"><div class="tk-bar"><i style="width:' + Math.round(st.n ? doneN / st.n * 100 : 0) + '%"></i></div><div class="tk-st"><span>已回報 <b>' + doneN + '/' + st.n + '</b></span><span>剩 <b>' + st.qty + '</b> 包</span>' +
+      (st.near ? '<span class="w">⚠ 即期 <b>' + st.near + '</b> 批</span>' : '') + '</div></div>';
+    h += tabsHtml([['un', '未回報', st.un], ['has', '有庫存', st.has], ['done', '完成', st.done]]);
+    var list = d.stores.filter(function (x) { return tabOf(x) === T.tab; });
+    list.sort(function (a, b) { return T.tab === 'has' ? remOf(b) - remOf(a) || byCode(a, b) : byCode(a, b); });
+    if (!list.length) h += '<div class="empty">' + (T.tab === 'un' ? '都回報完了 👍' : T.tab === 'has' ? '沒有還有庫存的店。' : '還沒有完成的店。') + '</div>';
+    h += '<div class="tslist">' + list.map(function (x) {
+      var s = dlSt(x), q = remOf(x), r;
+      if (s === 'un') r = '<span class="st-un">未回報</span>' + (x.lots.length ? '<small>系統有 ' + q + ' 包</small>' : '');
+      else if (s === 'has') r = '<span class="st-has">剩 ' + q + ' 包</span><small>期初 ' + x.open + ' 包</small>';
+      else if (s === 'ret') r = '<span class="st-ret">已回收 ' + x.ret + ' 包</span>';
+      else r = '<span class="st-done">' + DL_LABEL[s] + '</span>';
+      return '<button type="button" class="tsrow" data-ta="store" data-store="' + esc(x.code) + '"><div><div class="tsn"><b>' + esc(x.name) + '</b>' + tagChip(x.tag) +
+        (x.ch === 'CVS' && !d.cvsOnly ? '<span class="chtag">CVS</span>' : '') + (x.src === '調入' ? '<em class="hb old">調入</em>' : '') + otherMark(x) + '</div><small>' + esc(x.code) + '</small></div><div class="ts-r">' + r + '</div>' +
+        (s === 'has' ? '<div class="ts-lots">' + x.lots.map(function (l) { return '<span class="lotchip' + (l[3] ? ' near' : '') + '">' + (l[3] ? '⚠ ' : '') + esc(l[1]) + '・' + l[2] + ' 包</span>'; }).join('') + '</div>' : '') + '</button>';
+    }).join('') + '</div>';
+    return h + '<p class="tk-rule"><b>⚠ 即期</b>＝效期在下架月份（含）之前，這批會在架上過期，原本的效期提醒照常。其他批次改由任務倒數提醒。</p>';
+  }
+  function ctListHtml() {
+    var d = T.data, t = d.task, st = stats(), locked = t.locked;
+    var h = '<div class="tk-prog"><div class="tk-bar"><i style="width:' + Math.round(st.n ? st.done / st.n * 100 : 0) + '%"></i></div><div class="tk-st"><span>' + roundName(t.rd) + ' 已盤 <b>' + st.done + '/' + st.n + '</b></span><span>' + t.items.length + ' 個品項</span></div></div>';
+    h += tabsHtml([['un', locked ? '未盤・已截止' : '未盤', st.un], ['done', '已盤', st.done]]);
+    var list = d.stores.filter(function (x) { return tabOf(x) === T.tab; }).sort(byCode);
+    if (!list.length) h += '<div class="empty">' + (T.tab === 'un' ? (locked ? '每一家都有盤到 👍' : '都盤完了 👍') : '還沒有盤完的店。') + '</div>';
+    h += '<div class="tslist">' + list.map(function (x) {
+      var done = cntDone(x), at = String((t.rd === 2 ? x.r2At : x.r1At) || '');
+      var r = done ? '<span class="st-has">已盤</span><small>' + esc(at.slice(5)) + '</small>' : locked ? '<span class="st-lock">已截止</span><small>改用紙本</small>' : '<span class="st-un">未盤</span>';
+      return '<button type="button" class="tsrow" data-ta="store" data-store="' + esc(x.code) + '"><div><div class="tsn"><b>' + esc(x.name) + '</b>' +
+        (x.ch === 'CVS' && !d.cvsOnly ? '<span class="chtag">CVS</span>' : '') + otherMark(x) + '</div><small>' + esc(x.code) + '</small></div><div class="ts-r">' + r + '</div></button>';
+    }).join('') + '</div>';
+    return h + '<p class="tk-rule">每個品項填一個數字，沒賣填 0。截止前可以回來改；截止後鎖住，沒盤到的請改用紙本。' + (t.rd === 2 ? '活動後盤點不會顯示活動前的數字。' : '') + '</p>';
+  }
+
+  /* ---------- 店家面板（底部彈出） ---------- */
+  function openStore(code) {
+    T.store = code; T.sub = null; T.err = ''; T.rpt = null; T.cf = null; T.pq = {}; T.confirmNone = false;
+    renderPanel(true);
+  }
+  function closeStore() { if (T) { T.store = null; T.sub = null; T.err = ''; } closeSheet(); }
+  function renderPanel(toTop) {
+    if (!T || !T.store) return;
+    var x = storeBy(T.store);
+    if (!x || T.data.closed) { closeStore(); return; }
+    var h = !isDl() ? countHtml(x) : T.sub === 'xfer' ? xferHtml(x) : T.sub === 'ret' ? retHtml(x) : T.sub === 'add' ? addHtml(x)
+      : T.sub === 'collect' ? collectHtml(x) : x.r1 === '未回報' ? reportHtml(x) : detailHtml(x);
+    var old = $('sheet').firstChild, top = old && !toTop && !$('sheet').hidden ? old.scrollTop : 0;
+    openSheet(h, function () { if (T) { T.store = null; T.sub = null; T.err = ''; } });
+    $('sheet').firstChild.scrollTop = top;
+    if (!isDl()) syncCount();
+  }
+  function shHead(x) {
+    return '<div class="sh-hd"><div><b class="sh-t">' + esc(x.name) + '</b><small>' + esc(x.code) + (x.src === '調入' ? '　調入' : '') + '</small><div class="tgs">' + (isDl() ? tagChip(x.tag) : '') +
+      (x.ch === 'CVS' ? '<span class="chtag">CVS</span>' : '') + '</div></div><button type="button" class="x" data-ta="close" aria-label="關閉">×</button></div>';
+  }
+  function otherHint(x) {
+    return (x.others || []).map(function (o) {
+      return '<div class="other"><span>這家店還有 <b>' + esc(o[0]) + ' ' + esc(o[1]) + '</b>（' + esc(o[2]) + '・' + esc(o[3]) + '）</span><button type="button" data-ta="switch" data-task="' + esc(o[0]) + '"' + busyAttr() + '>切換</button></div>';
+    }).join('');
+  }
+  function subHead(title) { return '<div class="sh-hd"><button type="button" class="bk" data-ta="back" aria-label="返回">‹</button><div><b class="sh-t">' + esc(title) + '</b></div></div>'; }
+  function errBox() { return T.err ? '<p class="err">' + esc(T.err) + '</p>' : ''; }
+  function busyAttr() { return T.busy ? ' disabled' : ''; }
+  function stepper(key, v, ph) {
+    return '<div class="q3"><button type="button" data-ta="step" data-k="' + key + '" data-d="-1" aria-label="少一包">−</button><input type="number" inputmode="numeric" min="0" data-tin="' + key + '" value="' + v + '"' +
+      (ph ? ' placeholder="' + ph + '"' : '') + ' aria-label="包數"><button type="button" data-ta="step" data-k="' + key + '" data-d="1" aria-label="多一包">＋</button></div>';
+  }
+  function yOpts(v) {
+    var ty = thisYear(), lo = Math.min(ty, v || ty), hi = Math.max(ty + 2, v || ty), h = '';
+    for (var y = lo; y <= hi; y++) h += '<option value="' + y + '"' + (y === v ? ' selected' : '') + '>' + y + '</option>';
+    return h;
+  }
+  function mOpts(v) { var h = '<option value="0">月</option>'; for (var m = 1; m <= 12; m++) h += '<option value="' + m + '"' + (m === v ? ' selected' : '') + '>' + pad2(m) + '</option>'; return h; }
+  function histHtml(x) { return x.log && x.log.length ? '<div class="hist"><b>這個任務的紀錄</b>' + x.log.map(function (s) { return '<span>' + esc(s) + '</span>'; }).join('') + '</div>' : ''; }
+
+  /* 下架：回報期初庫存（每個效期一行） */
+  function reportHtml(x) {
+    var it = itemCode();
+    if (!T.rpt) {
+      T.rpt = x.lots.length ? x.lots.map(function (l) { var p = l[1].split('/'); return { y: +p[0], m: +p[1], q: l[2] }; }) : [{ y: thisYear(), m: 0, q: 1 }];
+      T.rptPre = x.lots.length > 0;
+    }
+    var h = shHead(x) + otherHint(x) + '<p class="sh-s">回報 <code>' + esc(it) + '</code> 現在店裡有幾包，每個效期一行。</p>';
+    if (T.rptPre) h += '<p class="shnote">系統裡已經有這家店的 ' + esc(it) + ' 效期紀錄，先帶出來了。照實際點到的改；已經沒有的那一行按 × 刪掉。</p>';
+    h += '<div class="rlots">' + T.rpt.map(function (l, i) {
+      var n = l.m && nearYm(l.y, l.m);
+      return '<div class="rlot"><select data-tsel="ry:' + i + '" aria-label="到期年">' + yOpts(l.y) + '</select><select data-tsel="rm:' + i + '" aria-label="到期月">' + mOpts(l.m) + '</select>' + stepper('r:' + i, l.q) +
+        '<button type="button" class="x" data-ta="rdel" data-i="' + i + '" aria-label="刪除這一行">×</button>' + (n ? '<span class="nearw">⚠ 即期：' + ymS(l.y, l.m) + ' 到期，早於或等於下架月</span>' : '') + '</div>';
+    }).join('') + '</div>';
+    h += '<button type="button" class="morebtn" data-ta="radd">＋ 再加一個效期</button>' + errBox();
+    h += '<button type="button" class="sh-pri" id="rgo" data-ta="rgo"' + busyAttr() + '>' + rgoLabel() + '</button>';
+    h += '<button type="button" class="sh-sec" data-ta="rnone"' + busyAttr() + '>' + (T.confirmNone ? '確定沒有庫存（系統的 ' + remOf(x) + ' 包會改成已售完）' : '這家店沒有庫存') + '</button>';
+    return h;
+  }
+  function rgoLabel() { return T.busy ? '儲存中…' : '回報 ' + T.rpt.reduce(function (a, l) { return a + l.q; }, 0) + ' 包'; }
+
+  /* 下架：已回報的店（每一批可以改數量、調撥、退貨） */
+  function detailHtml(x) {
+    var it = itemCode(), t = tTask(), q = remOf(x);
+    var h = shHead(x) + otherHint(x) + '<p class="sh-s"><code>' + esc(it) + '</code>・剩 <b>' + q + '</b> 包・期初 ' + x.open + ' 包</p>';
+    if (!x.lots.length) h += '<div class="empty">這家店已經沒有 ' + esc(it) + ' 了。</div>';
+    h += '<div class="lots">' + x.lots.map(function (l) {
+      var pv = T.pq[l[0]] != null ? T.pq[l[0]] : l[2];
+      return '<div class="lot"><div class="lot-h"><b>' + esc(l[1]) + '</b>' + (l[3] ? '<span class="nearw">⚠ 即期</span>' : '') + '<span class="q">' + l[2] + ' 包</span></div><div class="lot-a">' + stepper('p:' + l[0], pv) +
+        '<button type="button" class="ab sv" id="lqs' + l[0] + '" data-ta="lqsave" data-id="' + l[0] + '"' + (pv === l[2] ? ' hidden' : '') + busyAttr() + '>' + (T.busy ? '儲存中…' : '存數量') + '</button>' +
+        '<button type="button" class="ab" data-ta="oxfer" data-id="' + l[0] + '"' + busyAttr() + '>調撥</button><button type="button" class="ab ret" data-ta="oret" data-id="' + l[0] + '"' + busyAttr() + '>退貨</button></div></div>';
+    }).join('') + '</div>';
+    h += '<button type="button" class="morebtn" data-ta="oadd">＋ 收到貨或漏記，加一個效期</button>' + errBox();
+    if (x.ch === 'CVS') h += '<p class="shnote">CVS 下架後由門市自行物流退貨，這裡不用回報回收。</p>';
+    else if (t.left <= 0 && q > 0) h += '<button type="button" class="sh-pri red" data-ta="ocollect"' + busyAttr() + '>到店回收（共 ' + q + ' 包）</button>';
+    else if (q > 0) h += '<p class="shnote">下架日 ' + mdW(t.e1) + ' 起，這裡會出現「到店回收」。</p>';
+    return h + histHtml(x);
+  }
+  function nearWarn(l) {
+    if (!l[3]) return '';
+    return '<p class="err warn">⚠ 這批 ' + esc(l[1]) + ' 到期，在下架月（' + (+tTask().e1.split('/')[1]) + ' 月）之前或同月。調過去的店要在 ' + (+l[1].split('/')[1]) + ' 月底前賣完，不然查核會被抓；效期提醒會跟著轉過去。</p>';
+  }
+
+  /* 下架：調撥到自己（同一位業代）負責的店；這個品項標成快銷的排前面、慢銷的排最後 */
+  function tgtOf(code) { var l = T.data.targets || []; for (var i = 0; i < l.length; i++) if (l[i][0] === code) return l[i]; return null; }
+  function xferHtml(x) {
+    var l = lotBy(x, T.xf.id);
+    if (!l) { T.sub = null; return detailHtml(x); }
+    var h = subHead('調撥到自己的店') + '<p class="sh-s">從 <b>' + esc(x.name) + '</b>・' + esc(itemCode()) + ' <code>' + esc(l[1]) + '</code>・' + l[2] + ' 包</p>' + nearWarn(l);
+    h += '<div class="xqty"><span>調幾包</span>' + stepper('x', T.xf.q) + '<span>包</span></div>';
+    h += '<input type="search" data-tsearch="1" placeholder="輸入店名或代碼後幾碼" aria-label="搜尋目的店家" value="' + esc(T.xf.s) + '">';
+    h += '<div class="list tgt" id="tgtList" role="listbox" aria-label="目的店家">' + tgtListHtml(x) + '</div>' + errBox();
+    h += '<button type="button" class="sh-pri" id="xgo" data-ta="xgo"' + (T.xf.to && !T.busy ? '' : ' disabled') + '>' + xgoLabel() + '</button><button type="button" class="sh-txt" data-ta="back">取消</button>';
+    return h;
+  }
+  function xgoLabel() { var g = T.xf.to ? tgtOf(T.xf.to) : null; return T.busy ? '儲存中…' : g ? '調撥 ' + T.xf.q + ' 包到 ' + g[1] : '先選目的店'; }
+  function tgtListHtml(x) {
+    var q = String(T.xf.s || '').trim().toLowerCase();
+    var mine = (T.data.targets || []).filter(function (s) { return s[2] === x.owner && s[0] !== x.code && (!q || s[0].toLowerCase().indexOf(q) >= 0 || s[1].toLowerCase().indexOf(q) >= 0); });
+    var f = mine.filter(function (s) { return s[3] === '快'; }), sl = mine.filter(function (s) { return s[3] === '慢'; });
+    var o = mine.filter(function (s) { return s[3] !== '快' && s[3] !== '慢'; });
+    o.sort(function (a, b) { return (a[5] == null ? 1 : 0) - (b[5] == null ? 1 : 0); });   // 任務名單裡的店排前面
+    var room = Math.max(0, 80 - f.length);
+    var more = o.length + sl.length > room ? o.length + sl.length - room : 0;
+    o = o.slice(0, room); sl = sl.slice(0, Math.max(0, room - o.length));
+    function row(s) {
+      var info = [];
+      if (s[3] === '快') info.push('<small class="f">⚡ 快銷' + (s[4] ? '・' + esc(s[4]) : '') + '</small>');
+      if (s[3] === '慢') info.push('<small class="s">慢銷' + (s[4] ? '・' + esc(s[4]) : '') + '</small>');
+      info.push('<small>' + (s[5] == null ? '不在任務名單（調過去會自動加入）' : s[5] === 'un' ? '任務中・未回報' : '任務中・剩 ' + s[5] + ' 包') + '</small>');
+      return '<button type="button" role="option" class="' + (T.xf.to === s[0] ? 'on' : '') + '" data-ta="xto" data-store="' + esc(s[0]) + '"><code>' + esc(s[0].slice(-5)) + '</code><span class="pw"><b>' + esc(s[1]) + '</b>' + info.join('') + '</span></button>';
+    }
+    if (!f.length && !o.length && !sl.length) return '<div class="none">' + (q ? '找不到符合的店家' : '你沒有其他店可以調撥') + '</div>';
+    var h = '';
+    if (f.length) h += '<div class="lgrp">' + esc(itemCode()) + ' 標成快銷的店（' + f.length + '）</div>' + f.map(row).join('');
+    if (o.length) h += '<div class="lgrp">其他店</div>' + o.map(row).join('');
+    if (sl.length) h += '<div class="lgrp">標成慢銷的店</div>' + sl.map(row).join('');
+    if (more) h += '<div class="none">還有 ' + more + ' 家，請打店名縮小範圍</div>';
+    return h;
+  }
+
+  /* 下架：退貨（下架回收／跨區換貨） */
+  function retHtml(x) {
+    var l = lotBy(x, T.rt.id);
+    if (!l) { T.sub = null; return detailHtml(x); }
+    var xr = T.rt.reason === '跨區換貨';
+    var h = subHead('退貨') + '<p class="sh-s">' + esc(x.name) + '・' + esc(itemCode()) + ' <code>' + esc(l[1]) + '</code>・' + l[2] + ' 包</p>';
+    h += '<span class="lbl">原因</span><div class="seg"><button type="button" class="' + (!xr ? 'on' : '') + '" data-ta="rr" data-r="下架回收">下架回收<small>退回公司</small></button>' +
+      '<button type="button" class="' + (xr ? 'on' : '') + '" data-ta="rr" data-r="跨區換貨">跨區換貨<small>換給別區的業代</small></button></div>';
+    if (xr) h += '<p class="shnote">對方收到後，在他自己的店「加一個效期」或改數量。這裡記成「跨區換出」，不算下架退貨。</p><span class="lbl">換給哪家店（選填）</span>' +
+      '<input type="text" data-tto="1" maxlength="40" value="' + esc(T.rt.to) + '" placeholder="例：小林檳榔（陳志偉）" aria-label="換給哪家店">';
+    h += '<div class="xqty"><span>退幾包</span>' + stepper('t', T.rt.q) + '<span>包</span></div>' + errBox();
+    h += '<button type="button" class="sh-pri" id="tgo" data-ta="tgo"' + busyAttr() + '>' + tgoLabel() + '</button><button type="button" class="sh-txt" data-ta="back">取消</button>';
+    return h;
+  }
+  function tgoLabel() { return T.busy ? '儲存中…' : (T.rt.reason === '跨區換貨' ? '跨區換出 ' : '退貨 ') + T.rt.q + ' 包'; }
+
+  /* 下架：加一個效期（跨區換貨收到的、回報時漏記的） */
+  function addHtml(x) {
+    var a = T.ad, n = a.m && nearYm(a.y, a.m);
+    var h = subHead('加一個效期') + '<p class="sh-s">' + esc(x.name) + '・<code>' + esc(itemCode()) + '</code></p><p class="shnote">跨區換貨收到的貨，或回報時漏記的批次。同效期的會合併到原本那筆。</p>';
+    h += '<div class="rlots"><div class="rlot"><select data-tsel="ay" aria-label="到期年">' + yOpts(a.y) + '</select><select data-tsel="am" aria-label="到期月">' + mOpts(a.m) + '</select>' + stepper('a', a.q) + '<span></span>' +
+      (n ? '<span class="nearw">⚠ 即期：' + ymS(a.y, a.m) + ' 到期</span>' : '') + '</div></div>' + errBox();
+    return h + '<button type="button" class="sh-pri" id="ago" data-ta="ago"' + busyAttr() + '>' + agoLabel() + '</button><button type="button" class="sh-txt" data-ta="back">取消</button>';
+  }
+  function agoLabel() { return T.busy ? '儲存中…' : '加入 ' + T.ad.q + ' 包'; }
+
+  /* 下架：下架日到店回收（GT） */
+  function collectHtml(x) {
+    var h = subHead('到店回收') + '<p class="sh-s">' + esc(x.name) + '・<code>' + esc(itemCode()) + '</code></p><p class="shnote">照實際收回來的包數改。少的部分算已賣掉。</p><div class="lots">';
+    x.lots.forEach(function (l) {
+      var c = T.co[l[0]] != null ? T.co[l[0]] : l[2];
+      h += '<div class="lot"><div class="lot-h"><b>' + esc(l[1]) + '</b><span class="q">系統 ' + l[2] + ' 包</span></div><div class="lot-a"><span>收回</span>' + stepper('c:' + l[0], c) + '<span>包</span></div></div>';
+    });
+    h += '</div><div class="ctot"><span>收回合計</span><span id="ctot">' + coSum(x) + ' 包</span></div>' + errBox();
+    return h + '<button type="button" class="sh-pri red" id="cgo2" data-ta="cgo2"' + busyAttr() + '>' + cgo2Label(x) + '</button><button type="button" class="sh-txt" data-ta="back">取消</button>';
+  }
+  function coSum(x) { return x.lots.reduce(function (a, l) { return a + (T.co[l[0]] != null ? T.co[l[0]] : l[2]); }, 0); }
+  function cgo2Label(x) { return T.busy ? '儲存中…' : '回報回收 ' + coSum(x) + ' 包'; }
+
+  /* 盤點：每個品項一個數字 */
+  function countHtml(x) {
+    var t = tTask(), rd = t.rd, done = cntDone(x), at = String((rd === 2 ? x.r2At : x.r1At) || ''), end = rd === 2 ? t.e2 : t.e1;
+    if (!T.cf) { T.cf = {}; t.items.forEach(function (c) { var v = x.counts[c[0]]; T.cf[c[0]] = v === '' || v == null ? '' : +v; }); }
+    var h = shHead(x) + otherHint(x) + '<p class="sh-s"><span class="rdl">' + roundName(rd) + '</span>　' + (done ? '已盤（' + esc(at.slice(5)) + '）' : t.locked ? '' : mdS(end) + ' 截止') + '</p>';
+    if (t.locked) {
+      if (!done) return h + '<div class="lockbox">' + roundName(rd) + '已在 ' + mdS(end) + ' 截止，這家店沒有盤到。<br>請改用紙本交給主管。</div>';
+      return h + '<div class="cnts">' + t.items.map(function (c) {
+        return '<div class="cnt"><div><b>' + esc(c[1]) + '</b><small>' + esc(c[0]) + '</small></div><div class="cntv">' + esc(x.counts[c[0]]) + ' 包</div></div>';
+      }).join('') + '</div><p class="sh-note">已截止，不能再修改。</p>';
+    }
+    h += '<div class="cnts">' + t.items.map(function (c, i) {
+      return '<div class="cnt" id="cnt' + i + '"><div><b>' + esc(c[1]) + '</b><small>' + esc(c[0]) + '</small></div>' + stepper('v:' + i, T.cf[c[0]], '?') + '</div>';
+    }).join('') + '</div>';
+    h += '<button type="button" class="zero" id="czero" data-ta="czero" hidden></button>' + errBox();
+    h += '<button type="button" class="sh-pri" id="cgo" data-ta="cgo"></button>';
+    if (done) h += '<p class="sh-note">已經送過，再送一次會用這次的數字取代。</p>';
+    return h;
+  }
+  function syncCount() {
+    var t = tTask(), b = $('cgo'), z = $('czero');
+    if (!b) return;
+    var blanks = 0;
+    t.items.forEach(function (c, i) { var e = T.cf[c[0]] === ''; if (e) blanks++; var row = $('cnt' + i); if (row) row.className = 'cnt' + (e ? ' empty-v' : ''); });
+    var x = storeBy(T.store), done = x && cntDone(x);
+    b.disabled = !!blanks || T.busy;
+    b.textContent = T.busy ? '儲存中…' : blanks ? '還有 ' + blanks + ' 個品項沒填' : done ? '更新數量' : '送出這家店（' + t.items.length + ' 個品項）';
+    z.hidden = !blanks; z.textContent = '其餘 ' + blanks + ' 個填 0（這家店沒賣）';
+  }
+
+  /* ---------- 數字：＋／−、直接打字 ---------- */
+  function numRef(key) {
+    var x = storeBy(T.store), k = key.split(':'), id = +k[1];
+    switch (k[0]) {
+      case 'r': return { get: function () { return T.rpt[id].q; }, set: function (n) { T.rpt[id].q = n; }, min: 1, max: 99999 };
+      case 'p': var lp = lotBy(x, id); return { get: function () { return T.pq[id] != null ? T.pq[id] : lp[2]; }, set: function (n) { T.pq[id] = n; }, min: 0, max: 99999 };
+      case 'x': var lx = lotBy(x, T.xf.id); return { get: function () { return T.xf.q; }, set: function (n) { T.xf.q = n; }, min: 1, max: lx ? lx[2] : 1 };
+      case 't': var lt = lotBy(x, T.rt.id); return { get: function () { return T.rt.q; }, set: function (n) { T.rt.q = n; }, min: 1, max: lt ? lt[2] : 1 };
+      case 'a': return { get: function () { return T.ad.q; }, set: function (n) { T.ad.q = n; }, min: 1, max: 99999 };
+      case 'c': var lc = lotBy(x, id); return { get: function () { return T.co[id] != null ? T.co[id] : lc[2]; }, set: function (n) { T.co[id] = n; }, min: 0, max: lc ? lc[2] : 0 };
+      case 'v': var code = tTask().items[id][0]; return { get: function () { return T.cf[code]; }, set: function (n) { T.cf[code] = n; }, min: 0, max: 99999, blank: true };
+    }
+    return null;
+  }
+  function stepNum(key, d) {
+    var r = numRef(key); if (!r) return;
+    var v = r.get(), n = v === '' ? (d > 0 ? 1 : 0) : v + d;
+    n = Math.max(r.min, Math.min(r.max, n));
+    r.set(n);
+    var el = $('sheet').querySelector('[data-tin="' + key + '"]'); if (el) el.value = n;
+    T.err = ''; var e = $('sheet').querySelector('.sh > .err:not(.warn)'); if (e) e.hidden = true;
+    syncPanel();
+  }
+  function typedNum(el, final) {
+    var key = el.getAttribute('data-tin'), r = numRef(key); if (!r) return;
+    var s = String(el.value).trim(), n = parseInt(s, 10);
+    if (s === '' || !(n >= 0)) {
+      if (r.blank) r.set('');
+      else if (final) el.value = r.get();
+    } else {
+      var c = Math.max(r.min, Math.min(r.max, n));
+      r.set(c);
+      if (final && c !== n) el.value = c;
+    }
+    if (final && r.blank && s !== '' && !(n >= 0)) el.value = '';
+    syncPanel();
+  }
+  function syncPanel() {
+    var x = storeBy(T.store); if (!x) return;
+    if (!isDl()) { syncCount(); return; }
+    var b;
+    if (T.sub === 'xfer') { b = $('xgo'); if (b) b.textContent = xgoLabel(); }
+    else if (T.sub === 'ret') { b = $('tgo'); if (b) b.textContent = tgoLabel(); }
+    else if (T.sub === 'add') { b = $('ago'); if (b) b.textContent = agoLabel(); }
+    else if (T.sub === 'collect') { $('ctot').textContent = coSum(x) + ' 包'; b = $('cgo2'); if (b) b.textContent = cgo2Label(x); }
+    else if (x.r1 === '未回報') { b = $('rgo'); if (b && T.rpt) b.textContent = rgoLabel(); }
+    else x.lots.forEach(function (l) { var s = $('lqs' + l[0]); if (s) s.hidden = (T.pq[l[0]] != null ? T.pq[l[0]] : l[2]) === l[2]; });
+  }
+
+  /* ---------- 送出一個動作 ---------- */
+  function send(body, after, okFn) {
+    if (T.busy) return;
+    var taskId = tTask().id, store = T.store;
+    T.busy = true; T.err = ''; renderPanel();
+    var req = { idToken: liff.getIDToken(), op: 'tact', task: taskId, store: store, rid: Date.now().toString(36) + Math.random().toString(36).slice(2, 8) };
+    for (var k in body) if (body.hasOwnProperty(k)) req[k] = body[k];
+    api(req).then(function (res) {
+      T.busy = false;
+      if (!res.ok) {
+        if (res.error === 'invalid_token' || res.error === 'not_bound') { fatal(errText(res.error)); return; }
+        if (res.error === 'bad_input' || res.error === 'bad_target' || res.error === 'server_error') { T.err = errText(res.error); renderPanel(); return; }
+        reloadTask(errText(res.error));   // 資料可能剛被別人改過：重新讀取再顯示原因
+        return;
+      }
+      TLOG.lines.push(res.msg);
+      if (TLOG.ids.indexOf(taskId) < 0) TLOG.ids.push(taskId);
+      if (res.data && res.data.ok) T.data = res.data;
+      if (okFn) okFn();
+      if (after === 'close') { T.store = null; T.sub = null; T.rpt = null; T.cf = null; closeSheet(); }
+      else if (after === 'back') T.sub = null;
+      T.confirmNone = false;
+      renderTask(); renderPanel(after === 'back'); updateTBar();
+      toast('✓ ' + res.msg);
+    }).catch(function () {
+      T.busy = false;
+      reloadTask('網路不穩，剛才那一下不確定有沒有存到。已重新讀取，請看一下數字再決定要不要再按一次。');
+    });
+  }
+
+  function taskAct(a, b) {
+    var x = T.store ? storeBy(T.store) : null, id = +b.getAttribute('data-id');
+    switch (a) {
+      case 'reload': if (!T.busy) reloadTask(''); return;
+      case 'tab': T.tab = b.getAttribute('data-tab'); renderTask(); return;
+      case 'store': openStore(b.getAttribute('data-store')); return;
+      case 'close': closeStore(); return;
+      case 'back': T.sub = null; T.err = ''; renderPanel(true); return;
+      case 'switch': b.textContent = '讀取中…'; switchTask(b.getAttribute('data-task'), T.store); return;
+      case 'step': stepNum(b.getAttribute('data-k'), +b.getAttribute('data-d')); return;
+    }
+    if (!x) return;
+    switch (a) {
+      case 'rdel': T.rpt.splice(+b.getAttribute('data-i'), 1); T.err = ''; renderPanel(); return;
+      case 'radd': var last = T.rpt[T.rpt.length - 1]; T.rpt.push({ y: last ? last.y : thisYear(), m: 0, q: 1 }); T.err = ''; renderPanel(); return;
+      case 'rgo':
+        for (var i = 0; i < T.rpt.length; i++) if (!T.rpt[i].m) { T.err = '第 ' + (i + 1) + ' 行還沒選月份。'; renderPanel(); return; }
+        if (!T.rpt.length) { T.err = '沒有庫存的話，按下面的「這家店沒有庫存」。'; renderPanel(); return; }
+        send({ act: 'report', lots: T.rpt.map(function (l) { return [l.y, l.m, l.q]; }) }, 'close');
+        return;
+      case 'rnone':
+        if (x.lots.length && !T.confirmNone) { T.confirmNone = true; renderPanel(); return; }
+        send({ act: 'none' }, 'close');
+        return;
+      case 'lqsave': send({ act: 'qty', id: id, qty: T.pq[id] }, 'stay', function () { delete T.pq[id]; }); return;
+      case 'oxfer': var lx = lotBy(x, id); if (!lx) return; T.sub = 'xfer'; T.err = ''; T.xf = { id: id, to: null, q: lx[2], s: '' }; renderPanel(true); return;
+      case 'xto':
+        T.xf.to = b.getAttribute('data-store');
+        $('tgtList').innerHTML = tgtListHtml(x);
+        var g = $('xgo'); g.disabled = T.busy; g.textContent = xgoLabel();
+        return;
+      case 'xgo': if (T.xf.to) send({ act: 'xfer', id: T.xf.id, to: T.xf.to, q: T.xf.q }, 'back'); return;
+      case 'oret': var lr = lotBy(x, id); if (!lr) return; T.sub = 'ret'; T.err = ''; T.rt = { id: id, q: lr[2], reason: '下架回收', to: '' }; renderPanel(true); return;
+      case 'rr': T.rt.reason = b.getAttribute('data-r'); renderPanel(); return;
+      case 'tgo': send({ act: 'ret', id: T.rt.id, q: T.rt.q, reason: T.rt.reason, to: T.rt.reason === '跨區換貨' ? T.rt.to : '' }, 'back'); return;
+      case 'oadd': T.sub = 'add'; T.err = ''; T.ad = { y: thisYear(), m: 0, q: 1 }; renderPanel(true); return;
+      case 'ago':
+        if (!T.ad.m) { T.err = '還沒選月份。'; renderPanel(); return; }
+        send({ act: 'add', y: T.ad.y, m: T.ad.m, q: T.ad.q }, 'back');
+        return;
+      case 'ocollect': T.sub = 'collect'; T.err = ''; T.co = {}; renderPanel(true); return;
+      case 'cgo2': send({ act: 'collect', lots: x.lots.map(function (l) { return [l[0], T.co[l[0]] != null ? T.co[l[0]] : l[2]]; }) }, 'close'); return;
+      case 'czero':
+        tTask().items.forEach(function (c) { if (T.cf[c[0]] === '') T.cf[c[0]] = 0; });
+        renderPanel();
+        return;
+      case 'cgo':
+        var vals = {}, blank = false;
+        tTask().items.forEach(function (c) { if (T.cf[c[0]] === '') blank = true; vals[c[0]] = T.cf[c[0]]; });
+        if (!blank) send({ act: 'count', vals: vals }, 'close');
+        return;
+    }
+  }
+
+  $('tbody').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-ta]') : null;
+    if (b && T && !b.disabled) taskAct(b.getAttribute('data-ta'), b);
+  });
+  function inTaskSheet() { return T && T.store && !$('task').hidden && !$('sheet').hidden; }
+  $('sheet').addEventListener('click', function (e) {
+    if (!inTaskSheet()) return;
+    var b = e.target.closest ? e.target.closest('[data-ta]') : null;
+    if (b && !b.disabled) taskAct(b.getAttribute('data-ta'), b);
+  });
+  $('sheet').addEventListener('input', function (e) {
+    if (!inTaskSheet()) return;
+    var el = e.target;
+    if (el.hasAttribute('data-tin')) typedNum(el, false);
+    else if (el.hasAttribute('data-tsearch')) { T.xf.s = el.value; $('tgtList').innerHTML = tgtListHtml(storeBy(T.store)); }
+    else if (el.hasAttribute('data-tto')) T.rt.to = el.value;
+  });
+  $('sheet').addEventListener('change', function (e) {
+    if (!inTaskSheet()) return;
+    var el = e.target, k = el.getAttribute('data-tsel');
+    if (el.hasAttribute('data-tin')) { typedNum(el, true); return; }
+    if (!k) return;
+    var v = +el.value, p = k.split(':');
+    if (p[0] === 'ry') T.rpt[+p[1]].y = v; else if (p[0] === 'rm') T.rpt[+p[1]].m = v;
+    else if (p[0] === 'ay') T.ad.y = v; else if (p[0] === 'am') T.ad.m = v;
+    T.err = ''; renderPanel();
+  });
+
+  /* ---------- 底部：完成，回聊天室 ---------- */
+  function updateTBar() {
+    var n = TLOG.lines.length;
+    $('tcount').innerHTML = n ? '這次更新 <b>' + n + '</b> 項' : '每個動作按下去就存好了';
+    $('tdone').textContent = n ? '完成，回聊天室' : '回聊天室';
+    $('tdone').disabled = false;
+  }
+  $('tdone').onclick = function () {
+    var n = TLOG.lines.length;
+    if (T && T.busy) return;
+    if (!liff.isInClient()) { taskDone(n ? '這次更新了 ' + n + ' 項。' : ''); return; }
+    if (!n) { liff.closeWindow(); return; }
+    var lines = TLOG.lines.slice(0, 8);
+    if (n > 8) lines.push('…共 ' + n + ' 項');
+    var text = '✔ 任務更新 ' + TLOG.ids.join('、') + '\n' + lines.join('\n');
+    $('tdone').disabled = true; $('tdone').textContent = '傳送中…';
+    liff.sendMessages([{ type: 'text', text: text }]).then(function () { liff.closeWindow(); })
+      .catch(function () { taskDone('這次更新了 ' + n + ' 項。'); });
+  };
+  function taskDone(msg) {
+    closeSheet(); $('task').hidden = true; $('tbar').hidden = true;
+    show((msg ? msg + '\n' : '') + '資料都已經存好，可以關閉這個畫面。');
+  }
+
+  /* 處理頁「下架任務中」的「開啟任務」：切到任務頁，直接打開這家店 */
+  function gotoTask(id) {
+    if (!P || P.noteSaving || P.sending) return;
+    if (Object.keys(P.edits).length) { perr('這家店還有沒送出的變更，請先按「完成送出」，或把選項改回原本的。', true); return; }
+    if (P.noteDirty) { saveNote().then(function (ok) { if (ok) gotoTask(id); }); return; }
+    var store = P.data.store.code;
+    closeSheet(); $('proc').hidden = true; $('pbar').hidden = true;
+    P = null; START.store = '';
+    window.scrollTo(0, 0);
+    startTask(liff.getIDToken(), id, store);
+  }
+  $('pbody').addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-tkgo]') : null;
+    if (b) gotoTask(b.getAttribute('data-tkgo'));
+  });
 })();
 </script>
 </body>
